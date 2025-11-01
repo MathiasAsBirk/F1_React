@@ -1,0 +1,203 @@
+
+{
+  "oscar piastri": {
+    "gpEntered": 60, 
+    "careerPoints": 673, 
+    "bestFinish": "1st(x8)",
+    "podiums": 22, 
+    "bestGrid": "1st(x4)", 
+    "poles": 4, 
+    "worldChamps": 0, 
+    "dnfs": 3
+  },
+  "lando norris": {
+    "gpEntered": 142, 
+    "careerPoints": 1282, 
+    "bestFinish": "1st(x9)",
+    "podiums": 38, 
+    "bestGrid": "1st(x13)", 
+    "poles": 13, 
+    "worldChamps": 0, 
+    "dnfs": 12
+  },
+  "max verstappen": {
+    "gpEntered": 223, 
+    "careerPoints": 3210.5, 
+    "bestFinish": "1st(x65)",
+    "podiums": 117, 
+    "bestGrid": "1st(x44)", 
+    "poles": 44, 
+    "worldChamps": 4, 
+    "dnfs": 33
+  },
+  "george russell": {
+    "gpEntered": 142, 
+    "careerPoints": 886, 
+    "bestFinish": "1st(x4)",
+    "podiums": 21, 
+    "bestGrid": "1st(x7)", 
+    "poles": 6, 
+    "worldChamps": 0, 
+    "dnfs": 19
+  },
+  "charles leclerc": {
+    "gpEntered": 161, 
+    "careerPoints": 1581, 
+    "bestFinish": "1st(x8)",
+    "podiums": 48, 
+    "bestGrid": "1st(x27)", 
+    "poles": 27, 
+    "worldChamps": 0, 
+    "dnfs": 21
+  },
+  "lewis hamilton": {
+    "gpEntered": 370, 
+    "careerPoints": 4971.5, 
+    "bestFinish": "1st(x105)",
+    "podiums": 201, 
+    "bestGrid": "1st(x104)", 
+    "poles": 104, 
+    "worldChamps": 7, 
+    "dnfs": 32
+  },
+  "kimi antonelli": {
+    "gpEntered": 14, 
+    "careerPoints": 64, 
+    "bestFinish": "3th(x1)",
+    "podiums": 1, 
+    "bestGrid": "3th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 4
+  },
+  "alex albon": {
+    "gpEntered": 118,
+    "careerPoints": 294, 
+    "bestFinish": "3rd(x2)",
+    "podiums": 2, 
+    "bestGrid": "4th(x5)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 21
+  },
+  "yuki tsunoda": {
+    "gpEntered": 101, 
+    "careerPoints": 101, 
+    "bestFinish": "4th(x1)",
+    "podiums": 0, 
+    "bestGrid": "3th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 15
+  },
+  "carlos sainz": {
+    "gpEntered": 220, 
+    "careerPoints": 1288, 
+    "bestFinish": "1st(x4)",
+    "podiums": 27, 
+    "bestGrid": "1st(x6)", 
+    "poles": 6, 
+    "worldChamps": 0, 
+    "dnfs": 40
+  },
+  "esteban ocon": {
+    "gpEntered": 170, 
+    "careerPoints": 472, 
+    "bestFinish": "1st(x1)",
+    "podiums": 4, 
+    "bestGrid": "3rd(x3)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 25
+  },
+  "nico hulkenberg": {
+    "gpEntered": 241, 
+    "careerPoints": 608, 
+    "bestFinish": "3th(x1)",
+    "podiums": 1, 
+    "bestGrid": "1st(x1)", 
+    "poles": 1, 
+    "worldChamps": 0, 
+    "dnfs": 42
+  },
+  "lance stroll": {
+    "gpEntered": 180, 
+    "careerPoints": 218, 
+    "bestFinish": "3rd(x3)",
+    "podiums": 3, 
+    "bestGrid": "1st(x1)", 
+    "poles": 1, 
+    "worldChamps": 0, 
+    "dnfs": 29
+  },
+  "fernando alonso": {
+    "gpEntered": 417, 
+    "careerPoints": 2363, 
+    "bestFinish": "1st(x32)",
+    "podiums": 106, 
+    "bestGrid": "1st(x22)", 
+    "poles": 22, 
+    "worldChamps": 2, 
+    "dnfs": 81
+  },
+  "liam lawson": {
+    "gpEntered": 25, 
+    "careerPoints": 26, 
+    "bestFinish": "6th(x1)",
+    "podiums": 0, 
+    "bestGrid": "5th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 5
+  },
+  "oliver bearman": {
+    "gpEntered": 17, 
+    "careerPoints": 15, 
+    "bestFinish": "7th(x1)",
+    "podiums": 0, 
+    "bestGrid": "10th(x2)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 2
+  },
+  "pierre gasly": {
+    "gpEntered": 167, 
+    "careerPoints": 456, 
+    "bestFinish": "1st(x1)",
+    "podiums": 5, 
+    "bestGrid": "2th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 26
+  },
+  "franco colapinto": {
+    "gpEntered": 17, 
+    "careerPoints": 5, 
+    "bestFinish": "8th(x1)",
+    "podiums": 0, 
+    "bestGrid": "8th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 3
+  },
+  "isack hadjar": {
+    "gpEntered": 13, 
+    "careerPoints": 22, 
+    "bestFinish": "6th(x1)",
+    "podiums": 0, 
+    "bestGrid": "5th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 1
+  },
+  "gabriel bortoleto": {
+    "gpEntered": 14, 
+    "careerPoints": 14, 
+    "bestFinish": "6th(x1)",
+    "podiums": 0, 
+    "bestGrid": "7th(x1)", 
+    "poles": 0, 
+    "worldChamps": 0, 
+    "dnfs": 3
+  }
+}

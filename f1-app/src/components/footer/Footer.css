@@ -1,0 +1,122 @@
+:root{
+  /* match the new nav/home palette */
+  --foot-bg: #101214;
+  --foot-bg-2: #0b0d10;
+  --foot-border: #1b1f24;
+  --foot-text: #eaeaea;
+  --foot-dim: #cbd5e1;
+  --foot-dimmer: #98a3b3;
+  --foot-red: #e10600;
+}
+
+/* wrapper */
+.foot{
+  background: var(--foot-bg);
+  position: relative;
+  padding: 36px 0 18px 0;
+  margin-top: 64px;
+  color: var(--foot-text);
+  border-top: 1px solid var(--foot-border);
+  overflow: clip; /* no horizontal push */
+}
+
+/* thin gradient accent (much calmer than a big red bar) */
+.footLine{
+  margin-top: -38px;
+  padding-top: 5px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--foot-red), transparent);
+  opacity: .85;
+}
+
+/* content grid */
+.footGrid{
+  margin-top: 50px;
+  margin-left: 20px;
+  max-width: 1200px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 22px;
+}
+@media (max-width: 960px){
+  .footGrid{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px){
+  .footGrid{ grid-template-columns: 1fr; }
+}
+
+.footCol h4{
+  margin: 0 0 10px 0;
+  font-family: 'Orbitron', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: var(--foot-text);
+}
+
+.footTitle{
+  font-size: 1.1rem;
+}
+.footAccent{
+  color: var(--foot-dim);
+}
+
+.footText{
+  margin: 6px 0 0 0;
+  color: var(--foot-dimmer);
+  line-height: 1.55;
+  font-size: .96rem;
+}
+
+/* lists */
+.footList{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  font-size: .98rem;
+}
+.footList.muted li{ color: var(--foot-dimmer); }
+
+.footList a{
+  color: var(--foot-dim);
+  text-decoration: none;
+  border-radius: 8px;
+  display: inline-block;
+  padding: 4px 0;
+  transition: color .15s ease, background .15s ease;
+}
+.footList a:hover{
+  color: var(--foot-text);
+  background: rgba(255,255,255,.05);
+  padding-left: 6px;
+}
+
+/* socials */
+.footSocial{
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 2px 0 8px 0;
+}
+.footSocial a{
+  color: var(--foot-dim);
+  font-size: 1.28rem;
+  transition: color .17s ease, transform .08s ease;
+}
+.footSocial a:hover{
+  color: var(--foot-red);
+  transform: translateY(-1px);
+}
+
+/* bottom line */
+.footBottom{
+  text-align: center;
+  color: var(--foot-dimmer);
+  font-size: .92rem;
+  margin-top: 18px;
+  padding: 10px 24px 0;
+  border-top: 1px solid var(--foot-border);
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,.18));
+}

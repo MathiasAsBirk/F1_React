@@ -1,0 +1,35 @@
+.page{ background:#0b0b0b; color:#fff; min-height:100vh; }
+
+.header{ max-width:1200px; margin:0 auto; padding:20px 24px 8px; text-align:center; }
+.title{ margin:0; font-family:'Orbitron',system-ui,sans-serif; font-size:clamp(22px,3vw,30px); }
+.sub{ opacity:.75; margin:6px 0 10px; }
+.tabs{ display:flex; gap:8px; justify-content:center; }
+.tab{
+  background:#121212; border:1px solid #222; color:#eaeaea;
+  padding:8px 10px; border-radius:10px; cursor:pointer; font-weight:800;
+}
+.tab:hover{ background:#171717; }
+.active{ box-shadow: inset 0 -2px 0 #e10600; background:rgba(225,6,0,.08); }
+
+.tableWrap{ max-width:1200px; margin:10px auto 24px; padding:0 24px; }
+.table{
+  width:100%; border-collapse: collapse; background:#121212; border:1px solid #222; border-radius:12px; overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+thead th{
+  text-align:left; font-weight:900; padding:10px; background:#111315; border-bottom:1px solid #2a2f35;
+}
+tbody td{ padding:10px; border-bottom:1px solid #1f1f1f; }
+tbody tr:last-child td{ border-bottom:0; }
+
+.skelRow td{ padding:10px; }
+.skel{
+  height:18px; border-radius:8px; border:1px solid #222;
+  background:linear-gradient(90deg,#151515,#1a1a1a,#151515); animation:shimmer 1.2s infinite;
+}
+@keyframes shimmer{ 0%{filter:brightness(1)} 50%{filter:brightness(1.12)} 100%{filter:brightness(1)} }
+
+.error{
+  max-width:1200px; margin:8px auto 24px; padding:10px 12px;
+  border:1px solid #2a2a2a; border-radius:10px; background:#111; color:#ffb4b4; text-align:center;
+}

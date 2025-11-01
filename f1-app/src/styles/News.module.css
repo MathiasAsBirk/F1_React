@@ -1,0 +1,138 @@
+.newsWrapper {
+  padding: 60px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.3rem;
+  color: #fff;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.newsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: #1a1a1a;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.content {
+  padding: 16px 20px;
+}
+
+.category {
+  font-size: 0.75rem;
+  color: #e10600;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+.title {
+  font-size: 1.25rem;
+  color: #fff;
+  margin: 4px 0 8px;
+  font-weight: 600;
+}
+
+.summary {
+  font-size: 0.95rem;
+  color: #bbb;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  background: #121212;
+  padding: 24px 28px;
+  border-radius: 12px;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  position: relative;
+  animation: fadeIn 0.25s ease;
+}
+
+.modalImage {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.modalMeta {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.modalContent {
+  font-size: 1rem;
+  color: #ccc;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.closeButton {
+  margin-top: 20px;
+  background: #e10600;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #c00500;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
