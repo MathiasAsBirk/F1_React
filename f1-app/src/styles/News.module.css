@@ -132,6 +132,122 @@
   background: #c00500;
 }
 
+/* ── Toolbar (edit mode controls in the heading) ── */
+.titleActions {
+  float: right;
+  font-size: 1rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.editLabel {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbarBtn {
+  padding: 6px 10px;
+  background: #e10600;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.toolbarBtn:hover { background: #c00500; }
+
+.toolbarBtnGray {
+  padding: 6px 10px;
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.toolbarBtnGray:hover { background: #4b5563; }
+
+/* ── Card edit actions ── */
+.cardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.deleteBtn {
+  padding: 6px 10px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.deleteBtn:hover { background: #dc2626; }
+
+/* ── Edit form inputs inside modal ── */
+.editTitle {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+  padding: 6px;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.editField {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  padding: 6px;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.editTextarea {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  padding: 8px;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.editContent {
+  width: 100%;
+  font-size: 1rem;
+  padding: 10px;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.editActions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }

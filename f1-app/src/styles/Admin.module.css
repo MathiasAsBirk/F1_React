@@ -1,0 +1,41 @@
+.page {
+  padding: 2rem;
+  color: #fff;
+}
+
+.page h1 {
+  margin: 0 0 1rem 0;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.loginInput {
+  padding: 10px 12px;
+  background: #141414;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-right: 10px;
+}
+
+.loginBtn {
+  padding: 10px 20px;
+  background: #e10600;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.loginBtn:hover {
+  background: #c00500;
+}
+
+.error {
+  margin-top: 8px;
+  color: #ef4444;
+  font-size: 0.9rem;
+}

@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import styles from "../styles/Home.module.css";
-
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL, STORAGE_KEYS } from "../constants";
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
@@ -18,9 +16,9 @@ export default function Home() {
       try {
         setErr("");
         const [d, t, r] = await Promise.all([
-          axios.get(`${API}/api/driverstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API}/api/teamstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API}/api/raceresults`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/driverstandings`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/teamstandings`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
         ]);
         if (!isMounted) return;
 
@@ -74,7 +72,7 @@ export default function Home() {
   // Optional: read your editable News from localStorage if you used that pattern
   const newsCount = useMemo(() => {
     try {
-      const raw = localStorage.getItem("f1_news_v1");
+      const raw = localStorage.getItem(STORAGE_KEYS.NEWS);
       if (!raw) return null;
       const arr = JSON.parse(raw);
       return Array.isArray(arr) ? arr.length : null;

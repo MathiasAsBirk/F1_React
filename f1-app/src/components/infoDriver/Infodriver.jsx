@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import styles from "./infodriver.module.css";
 import driverStats from "../infoDriver/data/driverStats.json";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "../../constants";
 
 export default function Infodriver() {
   const [teams, setTeams] = useState([]);
@@ -22,7 +21,7 @@ export default function Infodriver() {
     (async () => {
       try {
         setErr(""); setLoading(true);
-        const res = await axios.get(`${API}/api/teams`);
+        const res = await axios.get(`${API_URL}/api/teams`);
         if (!mounted) return;
         setTeams(Array.isArray(res.data) ? res.data : []);
       } catch {

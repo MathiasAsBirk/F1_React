@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import styles from "../styles/Races.module.css";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "../constants";
 
 export default function Races() {
   const [loading, setLoading] = useState(true);
@@ -31,8 +30,8 @@ export default function Races() {
       setLoading(true); setErr("");
       try {
         const [resRaces, resResults] = await Promise.all([
-          axios.get(`${API}/api/races`).catch(() => ({ data: [] })),
-          axios.get(`${API}/api/raceresults`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/races`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
         ]);
         if (!mounted) return;
         const R = Array.isArray(resRaces.data) ? resRaces.data : [];

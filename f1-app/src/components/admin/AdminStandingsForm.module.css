@@ -1,0 +1,136 @@
+.loading {
+  color: #fff;
+  padding: 16px;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  padding: 10px 14px;
+  color: #fff;
+  border-radius: 8px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.toast[data-type="success"] {
+  background: #153f2e;
+  border: 1px solid #19c37d;
+}
+.toast[data-type="error"] {
+  background: #4a1d1d;
+  border: 1px solid #ef4444;
+}
+
+/* Outer grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 16px;
+  color: #fff;
+}
+
+/* Controls row spanning both columns */
+.controls {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  padding: 8px 10px;
+  background: #141414;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 220px;
+}
+
+.sortSelect {
+  padding: 8px 10px;
+  background: #141414;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+/* Section panels (Drivers / Teams) */
+.section {
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  padding: 12px 14px;
+  border-bottom: 1px solid #222;
+  background: #121212;
+  font-weight: 700;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+/* Each row uses display:contents so the two cells participate in the parent grid */
+.rowItem {
+  display: contents;
+}
+
+.rowName {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.rowNameStrong {
+  font-weight: 600;
+}
+
+.rowSub {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.rowActions {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e1e1e;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pointsInput {
+  width: 80px;
+  padding: 6px 8px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.saveBtn {
+  padding: 6px 10px;
+  background: #19c37d;
+  color: #04150f;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.saveBtn:hover {
+  opacity: 0.85;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

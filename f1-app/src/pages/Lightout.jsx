@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "../styles/F1LightsOut.module.css";
+import { STORAGE_KEYS } from "../constants";
 
-const LS_KEY = "f1_lightsout_highscore_v1";
+const LS_KEY = STORAGE_KEYS.LIGHTS_OUT_HIGHSCORE;
 
 function Metric({ label, value }) {
   return (

@@ -4,8 +4,14 @@
   --main-gray: #191919;
 }
 
-.container{
+.container {
   margin-top: -60px;
+}
+
+/* Hero background — swap in a real image via CSS when available:
+   background-image: url('/assets/f1-cars.jpg'); */
+.heroBg {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a0000 50%, #0f0f0f 100%);
 }
 
 .headerRoot {

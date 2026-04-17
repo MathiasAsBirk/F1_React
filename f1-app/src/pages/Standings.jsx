@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import styles from "../styles/Standings.module.css";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "../constants";
 
 export default function Standings() {
   const [tab, setTab] = useState("drivers");
@@ -18,9 +17,9 @@ export default function Standings() {
       try {
         setErr(""); setLoading(true);
         const [d, t, r] = await Promise.all([
-          axios.get(`${API}/api/driverstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API}/api/teamstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API}/api/raceresults`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/driverstandings`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/teamstandings`).catch(() => ({ data: [] })),
+          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
         ]);
         if (!mounted) return;
         setDrivers(Array.isArray(d.data) ? d.data : []);
