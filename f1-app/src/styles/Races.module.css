@@ -120,3 +120,23 @@
   border:1px solid #2a2a2a; border-radius:8px; padding:4px 8px; cursor:pointer;
 }
 .previewClose:hover{ background:#141414; }
+
+/* podium */
+.podium{ display:grid; gap:5px; margin-top:6px; }
+.podiumRow{ display:flex; align-items:center; gap:8px; }
+.podPos{
+  font-size:.72rem; font-weight:900; padding:2px 7px; border-radius:6px;
+  min-width:34px; text-align:center; flex-shrink:0;
+}
+.pos1{ background:#f4c430; color:#000; }
+.pos2{ background:#b8b8b8; color:#000; }
+.pos3{ background:#a0522d; color:#fff; }
+.podDriver{ font-weight:700; flex:1; font-size:.95rem; }
+.podCar{ opacity:.65; font-weight:400; font-size:.85rem; }
+.podTime{ opacity:.8; font-size:.88rem; font-family:monospace; white-space:nowrap; }
+
+/* upcoming badge */
+.badge{
+  margin-left:auto; font-size:.72rem; font-weight:800;
+  background:#1a2e45; color:#7dd3fc; border-radius:6px; padding:2px 8px;
+}

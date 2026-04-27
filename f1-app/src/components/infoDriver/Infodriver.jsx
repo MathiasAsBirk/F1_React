@@ -245,9 +245,8 @@ export default function Infodriver() {
                   </div>
                 </div>
 
-                {selected.flag && <img src={selected.flag} alt={`${selected.country} flag`} className={styles.flagBig} />}
-
                 <div className={styles.modalActions}>
+                  {selected.flag && <img src={selected.flag} alt={`${selected.country} flag`} className={styles.flagBig} />}
                   <button className={styles.btnPrimary} onClick={() => setSelected(null)}>Close</button>
                 </div>
               </div>

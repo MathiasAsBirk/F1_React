@@ -21,12 +21,11 @@ export default function Home() {
           axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
         ]);
         if (!isMounted) return;
-
         setDrivers(Array.isArray(d.data) ? d.data : []);
         setTeams(Array.isArray(t.data) ? t.data : []);
         setResults(Array.isArray(r.data) ? r.data : []);
-      } catch (e) {
-        setErr("Couldn’t reach the API right now.");
+      } catch {
+        setErr("Couldn't reach the API right now.");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -36,207 +35,199 @@ export default function Home() {
 
   const topDrivers = useMemo(() => {
     const arr = [...drivers];
-    // Prefer points (desc). Fallback to position (asc).
-    if (arr.length && typeof arr[0]?.points === "number") {
-      arr.sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
-    } else if (arr.length && typeof arr[0]?.position === "number") {
-      arr.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
-    }
-    return arr.slice(0, 3);
+    arr.sort((a, b) =>
+      typeof a.points === "number"
+        ? (b.points ?? 0) - (a.points ?? 0)
+        : (a.position ?? 999) - (b.position ?? 999)
+    );
+    return arr.slice(0, 5);
   }, [drivers]);
 
   const topTeams = useMemo(() => {
     const arr = [...teams];
-    if (arr.length && typeof arr[0]?.points === "number") {
-      arr.sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
-    } else if (arr.length && typeof arr[0]?.position === "number") {
-      arr.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
-    }
-    return arr.slice(0, 3);
+    arr.sort((a, b) =>
+      typeof a.points === "number"
+        ? (b.points ?? 0) - (a.points ?? 0)
+        : (a.position ?? 999) - (b.position ?? 999)
+    );
+    return arr.slice(0, 5);
   }, [teams]);
 
   const latestResult = useMemo(() => {
-    if (!Array.isArray(results) || results.length === 0) return null;
-    // Try to sort by date descending if date exists
+    if (!results.length) return null;
     const withDate = results.filter(r => r.date);
     if (withDate.length) {
       withDate.sort((a, b) => new Date(b.date) - new Date(a.date));
       return withDate[0];
     }
-    // Fallback: take last item as "latest"
     return results[results.length - 1];
   }, [results]);
 
-  const racesCount = Array.isArray(results) ? results.length : 0;
+  const racesCount = results.length;
 
-  // Optional: read your editable News from localStorage if you used that pattern
   const newsCount = useMemo(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.NEWS);
       if (!raw) return null;
       const arr = JSON.parse(raw);
       return Array.isArray(arr) ? arr.length : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, []);
 
   return (
     <div className={styles.page}>
+
       {/* HERO */}
       <section className={styles.hero}>
         <div className={styles.heroInner}>
-          <h1 className={styles.title}>
-            Formula 1 — 2025 Hub
-          </h1>
+          <span className={styles.seasonBadge}>2026 Season</span>
+          <h1 className={styles.title}>Formula 1<br /><span className={styles.titleAccent}>Hub</span></h1>
           <p className={styles.tagline}>
             Standings, results, news, and a fully-playable manager sim — all in one place.
           </p>
           <div className={styles.ctaRow}>
             <a className={styles.ctaPrimary} href="/standings">View Standings</a>
             <a className={styles.ctaSecondary} href="/team">Play F1 Manager</a>
-            <a className={styles.ctaGhost} href="/light">Lights Out (Reaction)</a>
+            <a className={styles.ctaGhost} href="/light">Lights Out</a>
           </div>
         </div>
+        <div className={styles.heroAccent} aria-hidden="true" />
       </section>
 
-      {/* STRIP STATS */}
-      <section className={styles.strip}>
-        <div className={styles.stripItem}>
-          <div className={styles.k}>Races</div>
-          <div className={styles.v}>{racesCount || "—"}</div>
-        </div>
-        <div className={styles.stripItem}>
-          <div className={styles.k}>Drivers</div>
-          <div className={styles.v}>{drivers?.length || "—"}</div>
-        </div>
-        <div className={styles.stripItem}>
-          <div className={styles.k}>Teams</div>
-          <div className={styles.v}>{teams?.length || "—"}</div>
-        </div>
-        <div className={styles.stripItem}>
-          <div className={styles.k}>News</div>
-          <div className={styles.v}>{newsCount ?? "—"}</div>
+      {/* STATS STRIP */}
+      <div className={styles.strip}>
+        <Stat label="Races Completed" value={racesCount || "—"} />
+        <Stat label="Drivers" value={drivers.length || "—"} />
+        <Stat label="Teams" value={teams.length || "—"} />
+        <Stat label="News Articles" value={newsCount ?? "—"} />
+      </div>
+
+      {/* LATEST RACE — featured */}
+      <section className={styles.featured}>
+        <div className={styles.featuredInner}>
+          <div className={styles.featuredLabel}>Latest Result</div>
+          {loading ? (
+            <div className={styles.skelBox} />
+          ) : latestResult ? (
+            <div className={styles.featuredContent}>
+              <div className={styles.featuredLeft}>
+                <div className={styles.featuredGP}>{latestResult.grandPrix}</div>
+                <div className={styles.featuredDate}>
+                  {latestResult.date
+                    ? new Date(latestResult.date).toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })
+                    : "—"}
+                </div>
+              </div>
+              <div className={styles.featuredPodium}>
+                {latestResult.winner && (
+                  <PodiumRow pos="1st" driver={latestResult.winner} extra={latestResult.car} time={latestResult.time} />
+                )}
+                {latestResult.p2 && (
+                  <PodiumRow pos="2nd" driver={latestResult.p2} time={latestResult.p2time} />
+                )}
+                {latestResult.p3 && (
+                  <PodiumRow pos="3rd" driver={latestResult.p3} time={latestResult.p3time} />
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.empty}>No results yet.</div>
+          )}
+          <a className={styles.featuredLink} href="/races">Full race calendar →</a>
         </div>
       </section>
 
       {/* QUICK LINKS */}
       <section className={styles.quick}>
-        <a className={styles.card} href="/drivers">
-          <div className={styles.cardTitle}>Drivers & Teams</div>
-          <div className={styles.cardSub}>Full 2025 grid overview</div>
-        </a>
-        <a className={styles.card} href="/races">
-          <div className={styles.cardTitle}>Races</div>
-          <div className={styles.cardSub}>Calendar, winners & info</div>
-        </a>
-        <a className={styles.card} href="/news">
-          <div className={styles.cardTitle}>News</div>
-          <div className={styles.cardSub}>Latest stories & features</div>
-        </a>
-        <a className={styles.card} href="/manager">
-          <div className={styles.cardTitle}>F1 Manager</div>
-          <div className={styles.cardSub}>Build your dream team</div>
-        </a>
+        <NavCard href="/drivers" title="Drivers & Teams"  sub="Full 2026 grid overview" />
+        <NavCard href="/races"   title="Races"            sub="Calendar, winners & circuits" />
+        <NavCard href="/news"    title="News"             sub="Latest stories & features" />
+        <NavCard href="/team"    title="F1 Manager"       sub="Build your dream team" />
       </section>
 
-      {/* LEADERBOARDS + LATEST RESULT */}
+      {/* LEADERBOARDS */}
       <section className={styles.leaders}>
-        <div className={styles.leaderCol}>
-          <div className={styles.blockHeader}>
-            <h3 className={styles.h3}>Top Drivers</h3>
-            <a className={styles.smallLink} href="/standings">Full table</a>
-          </div>
-          <div className={styles.list}>
-            {loading ? (
-              <SkeletonRows rows={3} />
-            ) : topDrivers.length ? (
-              topDrivers.map((d, i) => (
-                <Row
-                  key={d.driver || d.name || i}
-                  left={`#${(d.position ?? i + 1).toString().padStart(2, "0")}`}
-                  mid={d.driver || d.name}
-                  right={`${d.points ?? "—"} pts`}
-                />
-              ))
-            ) : (
-              <Empty msg="No driver data yet." />
-            )}
-          </div>
-        </div>
+        <LeaderBlock title="Drivers Championship" link="/standings" linkLabel="Full table">
+          {loading ? <SkeletonRows rows={5} /> : topDrivers.map((d, i) => (
+            <Row
+              key={d.driver || i}
+              pos={d.position ?? i + 1}
+              name={d.driver || d.name}
+              right={`${d.points ?? "—"} pts`}
+              nat={d.nationality}
+            />
+          ))}
+        </LeaderBlock>
 
-        <div className={styles.leaderCol}>
-          <div className={styles.blockHeader}>
-            <h3 className={styles.h3}>Constructors</h3>
-            <a className={styles.smallLink} href="/standings?tab=teams">Full table</a>
-          </div>
-          <div className={styles.list}>
-            {loading ? (
-              <SkeletonRows rows={3} />
-            ) : topTeams.length ? (
-              topTeams.map((t, i) => (
-                <Row
-                  key={t.team || i}
-                  left={`#${(t.position ?? i + 1).toString().padStart(2, "0")}`}
-                  mid={t.team}
-                  right={`${t.points ?? "—"} pts`}
-                />
-              ))
-            ) : (
-              <Empty msg="No team data yet." />
-            )}
-          </div>
-        </div>
-
-        <div className={styles.resultCol}>
-          <div className={styles.blockHeader}>
-            <h3 className={styles.h3}>Latest Grand Prix</h3>
-            <a className={styles.smallLink} href="/races">See all</a>
-          </div>
-          <div className={styles.resultCard}>
-            {loading ? (
-              <div className={styles.skelBox} />
-            ) : latestResult ? (
-              <>
-                <div className={styles.resultTitle}>{latestResult.grandPrix || "Grand Prix"}</div>
-                <div className={styles.resultMeta}>
-                  {latestResult.date
-                    ? new Date(latestResult.date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : "—"}
-                </div>
-                <div className={styles.resultWinner}>
-                  Winner: <strong>{latestResult.winner || "—"}</strong>
-                </div>
-                <div className={styles.resultCar}>{latestResult.car || ""}</div>
-                {latestResult.time && (
-                  <div className={styles.resultExtra}>Time: {latestResult.time}</div>
-                )}
-              </>
-            ) : (
-              <Empty msg="No results yet." />
-            )}
-          </div>
-        </div>
+        <LeaderBlock title="Constructors Championship" link="/standings?tab=teams" linkLabel="Full table">
+          {loading ? <SkeletonRows rows={5} /> : topTeams.map((t, i) => (
+            <Row
+              key={t.team || i}
+              pos={t.position ?? i + 1}
+              name={t.team}
+              right={`${t.points ?? "—"} pts`}
+            />
+          ))}
+        </LeaderBlock>
       </section>
 
-      {/* FOOTER NOTE / ERROR */}
       {err && <p className={styles.error}>{err}</p>}
     </div>
   );
 }
 
-/* ---------- tiny helpers ---------- */
+/* helpers */
 
-function Row({ left, mid, right }) {
+function Stat({ label, value }) {
+  return (
+    <div className={styles.statItem}>
+      <div className={styles.statLabel}>{label}</div>
+      <div className={styles.statValue}>{value}</div>
+    </div>
+  );
+}
+
+function NavCard({ href, title, sub }) {
+  return (
+    <a className={styles.navCard} href={href}>
+      <div>
+        <div className={styles.navTitle}>{title}</div>
+        <div className={styles.navSub}>{sub}</div>
+      </div>
+      <span className={styles.navArrow}>→</span>
+    </a>
+  );
+}
+
+function PodiumRow({ pos, driver, extra, time }) {
+  const cls = pos === "1st" ? styles.pos1 : pos === "2nd" ? styles.pos2 : styles.pos3;
+  return (
+    <div className={styles.podiumRow}>
+      <span className={`${styles.podPos} ${cls}`}>{pos}</span>
+      <span className={styles.podDriver}>{driver}{extra ? <span className={styles.podExtra}> · {extra}</span> : null}</span>
+      <span className={styles.podTime}>{time}</span>
+    </div>
+  );
+}
+
+function LeaderBlock({ title, link, linkLabel, children }) {
+  return (
+    <div className={styles.leaderCol}>
+      <div className={styles.blockHeader}>
+        <h3 className={styles.h3}>{title}</h3>
+        <a className={styles.smallLink} href={link}>{linkLabel}</a>
+      </div>
+      <div className={styles.list}>{children}</div>
+    </div>
+  );
+}
+
+function Row({ pos, name, right, nat }) {
   return (
     <div className={styles.row}>
-      <div className={styles.rowLeft}>{left}</div>
-      <div className={styles.rowMid}>{mid}</div>
-      <div className={styles.rowRight}>{right}</div>
+      <span className={styles.rowPos}>{pos}</span>
+      <span className={styles.rowName}>{name}{nat ? <span className={styles.rowNat}> {nat}</span> : null}</span>
+      <span className={styles.rowRight}>{right}</span>
     </div>
   );
 }
@@ -246,15 +237,11 @@ function Empty({ msg }) {
 }
 
 function SkeletonRows({ rows = 3 }) {
-  return (
-    <>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className={styles.skelRow}>
-          <div className={styles.skelDot} />
-          <div className={styles.skelMid} />
-          <div className={styles.skelTiny} />
-        </div>
-      ))}
-    </>
-  );
+  return Array.from({ length: rows }).map((_, i) => (
+    <div key={i} className={styles.skelRow}>
+      <div className={styles.skelDot} />
+      <div className={styles.skelMid} />
+      <div className={styles.skelTiny} />
+    </div>
+  ));
 }

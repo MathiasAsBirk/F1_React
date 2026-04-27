@@ -111,14 +111,14 @@
     "dnfs": 25
   },
   "nico hulkenberg": {
-    "gpEntered": 241, 
-    "careerPoints": 608, 
-    "bestFinish": "3th(x1)",
-    "podiums": 1, 
-    "bestGrid": "1st(x1)", 
-    "poles": 1, 
-    "worldChamps": 0, 
-    "dnfs": 42
+    "gpEntered": 254,
+    "careerPoints": 622,
+    "bestFinish": "3rd(x1)",
+    "podiums": 1,
+    "bestGrid": "1st(x1)",
+    "poles": 1,
+    "worldChamps": 0,
+    "dnfs": 44
   },
   "lance stroll": {
     "gpEntered": 180, 
@@ -181,23 +181,53 @@
     "dnfs": 3
   },
   "isack hadjar": {
-    "gpEntered": 13, 
-    "careerPoints": 22, 
-    "bestFinish": "6th(x1)",
-    "podiums": 0, 
-    "bestGrid": "5th(x1)", 
-    "poles": 0, 
-    "worldChamps": 0, 
-    "dnfs": 1
+    "gpEntered": 26,
+    "careerPoints": 55,
+    "bestFinish": "3rd(x1)",
+    "podiums": 1,
+    "bestGrid": "3rd(x1)",
+    "poles": 0,
+    "worldChamps": 0,
+    "dnfs": 3
+  },
+  "arvid lindblad": {
+    "gpEntered": 3,
+    "careerPoints": 4,
+    "bestFinish": "8th(x1)",
+    "podiums": 0,
+    "bestGrid": "9th(x1)",
+    "poles": 0,
+    "worldChamps": 0,
+    "dnfs": 0
   },
   "gabriel bortoleto": {
-    "gpEntered": 14, 
-    "careerPoints": 14, 
+    "gpEntered": 27,
+    "careerPoints": 21,
     "bestFinish": "6th(x1)",
-    "podiums": 0, 
-    "bestGrid": "7th(x1)", 
-    "poles": 0, 
-    "worldChamps": 0, 
-    "dnfs": 3
+    "podiums": 0,
+    "bestGrid": "7th(x3)",
+    "poles": 0,
+    "worldChamps": 0,
+    "dnfs": 5
+  },
+  "sergio perez": {
+    "gpEntered": 284,
+    "careerPoints": 1638,
+    "bestFinish": "1st(x6)",
+    "podiums": 39,
+    "bestGrid": "1st(x3)",
+    "poles": 3,
+    "worldChamps": 0,
+    "dnfs": 39
+  },
+  "valtteri bottas": {
+    "gpEntered": 249,
+    "careerPoints": 1797,
+    "bestFinish": "1st(x10)",
+    "podiums": 67,
+    "bestGrid": "1st(x20)",
+    "poles": 20,
+    "worldChamps": 0,
+    "dnfs": 29
   }
 }

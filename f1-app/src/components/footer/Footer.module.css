@@ -14,7 +14,6 @@
   padding: 36px 0 18px 0;
   margin-top: 64px;
   color: var(--foot-text);
-  border-top: 1px solid var(--foot-border);
   overflow: clip;
 }
 

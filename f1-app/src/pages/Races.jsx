@@ -59,7 +59,9 @@ export default function Races() {
         winner: r.winner || "",
         car: r.car || "",
         time: r.time || "",
-        image: r.race || r.image || r.circuitImage || r.circuitImg || null, // <-- from seed
+        p2: r.p2 || "", p2time: r.p2time || "",
+        p3: r.p3 || "", p3time: r.p3time || "",
+        image: r.race || r.image || r.circuitImage || r.circuitImg || null,
       };
     };
 
@@ -70,8 +72,8 @@ export default function Races() {
       const byName = new Map(results.map(r => [String(r.grandPrix || "").toLowerCase(), r]));
       list = list.map(x => {
         const w = byName.get(String(x.grandPrix || "").toLowerCase());
-        return w ? { ...x, winner: w.winner, car: w.car, time: w.time } : x;
-        });
+        return w ? { ...x, winner: w.winner, car: w.car, time: w.time, p2: w.p2, p2time: w.p2time, p3: w.p3, p3time: w.p3time } : x;
+      });
     }
 
     // sort by date asc (nulls last)
@@ -157,15 +159,17 @@ export default function Races() {
                 {latest.circuit && <> · {latest.circuit}</>}
                 {latest.country && <> · {latest.country}</>}
               </div>
-              <div className={styles.latestWinner}>
-                Winner: <strong>{latest.winner || "—"}</strong>
-              </div>
-              {latest.car && <div className={styles.latestCar}>{latest.car}</div>}
-              {latest.time && <div className={styles.latestExtra}>Time: {latest.time}</div>}
+              {latest.winner && (
+                <div className={styles.podium}>
+                  <PodiumRow pos="1st" driver={latest.winner} time={latest.time} car={latest.car} />
+                  {latest.p2 && <PodiumRow pos="2nd" driver={latest.p2} time={latest.p2time} />}
+                  {latest.p3 && <PodiumRow pos="3rd" driver={latest.p3} time={latest.p3time} />}
+                </div>
+              )}
               {latest.image && (
                 <button
-                    className={styles.linkBtn}
-                    onClick={() => setPreview({ src: latest.image, alt: `${latest.circuit || latest.grandPrix} circuit` })}
+                  className={styles.linkBtn}
+                  onClick={() => setPreview({ src: latest.image, alt: `${latest.circuit || latest.grandPrix} circuit` })}
                 >
                   View circuit map
                 </button>
@@ -214,35 +218,33 @@ export default function Races() {
 
 function RaceCard({ r, onPreview }) {
   const isPast = r.date && r.date < new Date();
+  const hasPodium = isPast && r.winner;
   return (
     <article className={styles.card}>
       <div className={styles.cardBody}>
         <div className={styles.cardTop}>
           <div className={styles.dot} />
           <div className={styles.gp}>{r.grandPrix}</div>
+          {!isPast && <span className={styles.badge}>Upcoming</span>}
         </div>
         <div className={styles.meta}>
-          <span>{r.date ? new Date(r.date).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : "TBA"}</span>
+          <span>{r.date ? r.date.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }) : "TBA"}</span>
           {r.circuit && <span>• {r.circuit}</span>}
           {r.country && <span>• {r.country}</span>}
         </div>
 
-        <div className={styles.resultRow}>
-          <div className={styles.label}>{isPast ? "Winner" : "Defending winner"}</div>
-          <div className={styles.value}>{r.winner || "—"}</div>
-        </div>
-        {r.car && (
-          <div className={styles.resultRow}>
-            <div className={styles.label}>Car</div>
-            <div className={styles.value}>{r.car}</div>
+        {hasPodium ? (
+          <div className={styles.podium}>
+            <PodiumRow pos="1st" driver={r.winner} time={r.time} car={r.car} />
+            {r.p2 && <PodiumRow pos="2nd" driver={r.p2} time={r.p2time} />}
+            {r.p3 && <PodiumRow pos="3rd" driver={r.p3} time={r.p3time} />}
           </div>
-        )}
-        {r.time && isPast && (
+        ) : !isPast && r.winner ? (
           <div className={styles.resultRow}>
-            <div className={styles.label}>Time</div>
-            <div className={styles.value}>{r.time}</div>
+            <div className={styles.label}>Defending winner</div>
+            <div className={styles.value}>{r.winner}</div>
           </div>
-        )}
+        ) : null}
 
         {r.image && (
           <button
@@ -254,5 +256,16 @@ function RaceCard({ r, onPreview }) {
         )}
       </div>
     </article>
+  );
+}
+
+function PodiumRow({ pos, driver, time, car }) {
+  const posClass = pos === "1st" ? styles.pos1 : pos === "2nd" ? styles.pos2 : styles.pos3;
+  return (
+    <div className={styles.podiumRow}>
+      <span className={`${styles.podPos} ${posClass}`}>{pos}</span>
+      <span className={styles.podDriver}>{driver}{car ? <span className={styles.podCar}> · {car}</span> : null}</span>
+      <span className={styles.podTime}>{time}</span>
+    </div>
   );
 }

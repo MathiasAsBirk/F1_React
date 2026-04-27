@@ -5,7 +5,38 @@ import DriverStanding from './models/driverStanding.model.js';
 import TeamStanding from './models/teamStanding.model.js';
 import RaceResult from './models/raceResult.model.js';
 
+const P = (team, code) =>
+  `https://media.formula1.com/image/upload/c_lfill,w_440/q_auto/v1740000001/common/f1/2026/${team}/${code}/2026${team}${code}right.webp`;
+const C = (team) =>
+  `https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000001/common/f1/2026/${team}/2026${team}carright.webp`;
+
 const teams = [
+  // Audi
+  {
+    team: "Audi",
+    color: "#bb0a1e",
+    drivers: [
+      {
+        name: "Nico Hulkenberg",
+        age: 37,
+        num: "27",
+        country: "Germany",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Flag_of_Germany.svg",
+        photo: P("audi", "nichul01"),
+        car: C("audi")
+      },
+      {
+        name: "Gabriel Bortoleto",
+        age: 21,
+        num: "5",
+        country: "Brazil",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg",
+        photo: P("audi", "gabbor01"),
+        car: C("audi")
+      }
+    ]
+  },
+
   // Alpine
   {
     team: "Alpine",
@@ -17,8 +48,8 @@ const teams = [
         num: "10",
         country: "France",
         flag: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg",
-        photo: "/assets/Alpine_1.png",
-        car: "https://media.formula1.com/image/upload/c_lfill,h_224/q_auto/d_common:f1:2025:fallback:car:2025fallbackcarright.webp/v1740000000/common/f1/2025/alpine/2025alpinecarright.webp"
+        photo: P("alpine", "piegas01"),
+        car: C("alpine")
       },
       {
         name: "Franco Colapinto",
@@ -26,8 +57,8 @@ const teams = [
         num: "43",
         country: "Argentina",
         flag: "https://upload.wikimedia.org/wikipedia/commons/1/1a/Flag_of_Argentina.svg",
-        photo: "/assets/Alpine_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("alpine", "fracol01"),
+        car: C("alpine")
       }
     ]
   },
@@ -39,21 +70,47 @@ const teams = [
     drivers: [
       {
         name: "Fernando Alonso",
-        age: 42,
+        age: 43,
         num: "14",
         country: "Spain",
         flag: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Flag_of_Spain.svg",
-        photo: "/assets/Aston_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("astonmartin", "feralo01"),
+        car: C("astonmartin")
       },
       {
         name: "Lance Stroll",
-        age: 24,
+        age: 26,
         num: "18",
         country: "Canada",
         flag: "https://upload.wikimedia.org/wikipedia/commons/c/cf/Flag_of_Canada.svg",
-        photo: "/assets/Aston_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("astonmartin", "lanstr01"),
+        car: C("astonmartin")
+      }
+    ]
+  },
+
+  // Cadillac
+  {
+    team: "Cadillac",
+    color: "#9e9e9e",
+    drivers: [
+      {
+        name: "Sergio Perez",
+        age: 35,
+        num: "11",
+        country: "Mexico",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg",
+        photo: P("cadillac", "serper01"),
+        car: C("cadillac")
+      },
+      {
+        name: "Valtteri Bottas",
+        age: 35,
+        num: "77",
+        country: "Finland",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/b/bc/Flag_of_Finland.svg",
+        photo: P("cadillac", "valbot01"),
+        car: C("cadillac")
       }
     ]
   },
@@ -69,17 +126,17 @@ const teams = [
         num: "16",
         country: "Monaco",
         flag: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Flag_of_Monaco.svg",
-        photo: "/assets/Ferrari_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("ferrari", "chalec01"),
+        car: C("ferrari")
       },
       {
         name: "Lewis Hamilton",
-        age: 39,
+        age: 40,
         num: "44",
         country: "United Kingdom",
         flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
-        photo: "/assets/Ferrari_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("ferrari", "lewham01"),
+        car: C("ferrari")
       }
     ]
   },
@@ -91,12 +148,12 @@ const teams = [
     drivers: [
       {
         name: "Oliver Bearman",
-        age: 19,
+        age: 20,
         num: "87",
         country: "United Kingdom",
         flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
-        photo: "/assets/Haas_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("haas", "olibea01"),
+        car: C("haas")
       },
       {
         name: "Esteban Ocon",
@@ -104,8 +161,8 @@ const teams = [
         num: "31",
         country: "France",
         flag: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg",
-        photo: "/assets/Haas_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("haas", "estoco01"),
+        car: C("haas")
       }
     ]
   },
@@ -117,21 +174,21 @@ const teams = [
     drivers: [
       {
         name: "Oscar Piastri",
-        age: 22,
+        age: 24,
         num: "81",
         country: "Australia",
         flag: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Australia.svg",
-        photo: "/assets/Mclaren_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("mclaren", "oscpia01"),
+        car: C("mclaren")
       },
       {
         name: "Lando Norris",
-        age: 24,
+        age: 25,
         num: "4",
         country: "United Kingdom",
         flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
-        photo: "/assets/Mclaren_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("mclaren", "lannor01"),
+        car: C("mclaren")
       }
     ]
   },
@@ -143,12 +200,12 @@ const teams = [
     drivers: [
       {
         name: "George Russell",
-        age: 25,
+        age: 27,
         num: "63",
         country: "United Kingdom",
         flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
-        photo: "/assets/Mercedes_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("mercedes", "georus01"),
+        car: C("mercedes")
       },
       {
         name: "Kimi Antonelli",
@@ -156,34 +213,34 @@ const teams = [
         num: "12",
         country: "Italy",
         flag: "https://upload.wikimedia.org/wikipedia/commons/0/03/Flag_of_Italy.svg",
-        photo: "/assets/Mercedes_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("mercedes", "andant01"),
+        car: C("mercedes")
       }
     ]
   },
 
-  // Racing Bulls (RB)
+  // Racing Bulls
   {
     team: "Racing Bulls",
     color: "#465baa",
     drivers: [
       {
         name: "Liam Lawson",
-        age: 21,
-        num: "40",
+        age: 23,
+        num: "30",
         country: "New Zealand",
         flag: "https://upload.wikimedia.org/wikipedia/commons/3/3e/Flag_of_New_Zealand.svg",
-        photo: "/assets/RacingBull_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("racingbulls", "lialaw01"),
+        car: C("racingbulls")
       },
       {
-        name: "Isack Hadjar",
-        age: 20,
-        num: "6",
-        country: "France",
-        flag: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg",
-        photo: "/assets/RacingBull_2.png",
-        car: "/assets/F1_car.png"
+        name: "Arvid Lindblad",
+        age: 18,
+        num: "8",
+        country: "United Kingdom",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
+        photo: P("racingbulls", "arvlin01"),
+        car: C("racingbulls")
       }
     ]
   },
@@ -195,47 +252,21 @@ const teams = [
     drivers: [
       {
         name: "Max Verstappen",
-        age: 26,
+        age: 27,
         num: "1",
         country: "Netherlands",
         flag: "https://upload.wikimedia.org/wikipedia/commons/2/20/Flag_of_the_Netherlands.svg",
-        photo: "/assets/RedBull_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("redbullracing", "maxver01"),
+        car: C("redbullracing")
       },
       {
-        name: "Yuki Tsunoda",
-        age: 24,
-        num: "22",
-        country: "Japan",
-        flag: "https://upload.wikimedia.org/wikipedia/commons/9/9e/Flag_of_Japan.svg",
-        photo: "/assets/RedBull_2.png",
-        car: "/assets/F1_car.png"
-      }
-    ]
-  },
-
-  // Sauber
-  {
-    team: "Sauber",
-    color: "#52e252",
-    drivers: [
-      {
-        name: "Nico Hulkenberg",
-        age: 36,
-        num: "27",
-        country: "Germany",
-        flag: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Flag_of_Germany.svg",
-        photo: "/assets/Sauber_1.png",
-        car: "/assets/F1_car.png"
-      },
-      {
-        name: "Gabriel Bortoleto",
+        name: "Isack Hadjar",
         age: 20,
-        num: "5",
-        country: "Brazil",
-        flag: "https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg",
-        photo: "/assets/Sauber_2.png",
-        car: "/assets/F1_car.png"
+        num: "6",
+        country: "France",
+        flag: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg",
+        photo: P("redbullracing", "isahad01"),
+        car: C("redbullracing")
       }
     ]
   },
@@ -247,12 +278,12 @@ const teams = [
     drivers: [
       {
         name: "Alex Albon",
-        age: 27,
+        age: 29,
         num: "23",
         country: "Thailand",
         flag: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg",
-        photo: "/assets/Williams_1.png",
-        car: "/assets/F1_car.png"
+        photo: P("williams", "alealb01"),
+        car: C("williams")
       },
       {
         name: "Carlos Sainz",
@@ -260,262 +291,102 @@ const teams = [
         num: "55",
         country: "Spain",
         flag: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Flag_of_Spain.svg",
-        photo: "/assets/Williams_2.png",
-        car: "/assets/F1_car.png"
+        photo: P("williams", "carsai01"),
+        car: C("williams")
       }
     ]
   }
 ];
 
+const CM = (slug) =>
+  `https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${slug}`;
+
 const races = [
-  {
-    name: "Canadian Grand Prix",
-    startDate: "2025-06-13",
-    endDate: "2025-06-15",
-    circuit: "Circuit Gilles Villeneuve",
-    country: "Canada",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/c/cf/Flag_of_Canada.svg",
-    race: "/assets/Canada.png"
-  },
-  {
-    name: "Austrian Grand Prix",
-    startDate: "2025-06-27",
-    endDate: "2025-06-29",
-    circuit: "Red Bull Ring",
-    country: "Austria",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/4/41/Flag_of_Austria.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Austria_Circuit"
-  },
-  {
-    name: "British Grand Prix",
-    startDate: "2025-07-04",
-    endDate: "2025-07-06",
-    circuit: "Silverstone Circuit",
-    country: "United Kingdom",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Great_Britain_Circuit"
-  },
-  {
-    name: "Belgian Grand Prix",
-    startDate: "2025-07-25",
-    endDate: "2025-07-27",
-    circuit: "Circuit de Spa-Francorchamps",
-    country: "Belgium",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/9/92/Flag_of_Belgium_%28civil%29.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Belgium_Circuit"
-  },
-  {
-    name: "Hungarian Grand Prix",
-    startDate: "2025-08-01",
-    endDate: "2025-08-03",
-    circuit: "Hungaroring",
-    country: "Hungary",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Flag_of_Hungary.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Hungary_Circuit"
-  },
-  {
-    name: "Netherlands Grand Prix",
-    startDate: "2025-08-29",
-    endDate: "2025-08-31",
-    circuit: "Circuit Zandvoort",
-    country: "Netherlands",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/2/20/Flag_of_the_Netherlands.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Netherlands_Circuit"
-  },
-  {
-    name: "Italian Grand Prix",
-    startDate: "2025-09-05",
-    endDate: "2025-09-07",
-    circuit: "Autodromo Nazionale Monza",
-    country: "Italy",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/0/03/Flag_of_Italy.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Italy_Circuit"
-  },
-  {
-    name: "Azerbaijan Grand Prix",
-    startDate: "2025-09-19",
-    endDate: "2025-09-21",
-    circuit: "Baku City Circuit",
-    country: "Azerbaijan",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/d/dd/Flag_of_Azerbaijan.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Baku_Circuit"
-  },
-  {
-    name: "Singapore Grand Prix",
-    startDate: "2025-10-03",
-    endDate: "2025-10-05",
-    circuit: "Marina Bay Street Circuit",
-    country: "Singapore",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/4/48/Flag_of_Singapore.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Singapore_Circuit"
-  },
-  {
-    name: "United States Grand Prix",
-    startDate: "2025-10-17",
-    endDate: "2025-10-19",
-    circuit: "Circuit of the Americas",
-    country: "United States",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/USA_Circuit"
-  },
-  {
-    name: "Mexican Grand Prix",
-    startDate: "2025-10-24",
-    endDate: "2025-10-26",
-    circuit: "Autódromo Hermanos Rodríguez",
-    country: "Mexico",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Mexico_Circuit"
-  },
-  {
-    name: "Brazilian Grand Prix",
-    startDate: "2025-11-07",
-    endDate: "2025-11-09",
-    circuit: "Autódromo José Carlos Pace",
-    country: "Brazil",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Brazil_Circuit"
-  },
-  {
-    name: "Las Vegas Grand Prix",
-    startDate: "2025-11-20",
-    endDate: "2025-11-22",
-    circuit: "Las Vegas Strip Circuit",
-    country: "United States",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Las_Vegas_Circuit"
-  },
-  {
-    name: "Qatar Grand Prix",
-    startDate: "2025-11-28",
-    endDate: "2025-11-30",
-    circuit: "Losail International Circuit",
-    country: "Qatar",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/6/65/Flag_of_Qatar.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Qatar_Circuit"
-  },
-  {
-    name: "Abu Dhabi Grand Prix",
-    startDate: "2025-12-05",
-    endDate: "2025-12-07",
-    circuit: "Yas Marina Circuit",
-    country: "United Arab Emirates",
-    flag: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Flag_of_the_United_Arab_Emirates.svg",
-    race: "https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/Abu_Dhabi_Circuit"
-  }
-  
+  { name: "Australian Grand Prix",      startDate: "2026-03-06", endDate: "2026-03-08", circuit: "Albert Park Circuit",              country: "Australia",             flag: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Australia.svg",                                                                                              race: CM("Australia_Circuit") },
+  { name: "Chinese Grand Prix",         startDate: "2026-03-13", endDate: "2026-03-15", circuit: "Shanghai International Circuit",   country: "China",                 flag: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Flag_of_the_People%27s_Republic_of_China.svg",                                                                 race: CM("China_Circuit") },
+  { name: "Japanese Grand Prix",        startDate: "2026-03-27", endDate: "2026-03-29", circuit: "Suzuka Circuit",                   country: "Japan",                 flag: "https://upload.wikimedia.org/wikipedia/commons/9/9e/Flag_of_Japan.svg",                                                                                               race: CM("Japan_Circuit") },
+  { name: "Miami Grand Prix",           startDate: "2026-05-01", endDate: "2026-05-03", circuit: "Miami International Autodrome",    country: "United States",         flag: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg",                                                                                   race: CM("Miami_Circuit") },
+  { name: "Canadian Grand Prix",        startDate: "2026-05-22", endDate: "2026-05-24", circuit: "Circuit Gilles Villeneuve",        country: "Canada",                flag: "https://upload.wikimedia.org/wikipedia/commons/c/cf/Flag_of_Canada.svg",                                                                                              race: CM("Canada_Circuit") },
+  { name: "Monaco Grand Prix",          startDate: "2026-06-05", endDate: "2026-06-07", circuit: "Circuit de Monaco",                country: "Monaco",                flag: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Flag_of_Monaco.svg",                                                                                               race: CM("Monaco_Circuit") },
+  { name: "Spanish Grand Prix",         startDate: "2026-06-12", endDate: "2026-06-14", circuit: "Circuit de Barcelona-Catalunya",   country: "Spain",                 flag: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Flag_of_Spain.svg",                                                                                               race: CM("Spain_Circuit") },
+  { name: "Austrian Grand Prix",        startDate: "2026-06-26", endDate: "2026-06-28", circuit: "Red Bull Ring",                    country: "Austria",               flag: "https://upload.wikimedia.org/wikipedia/commons/4/41/Flag_of_Austria.svg",                                                                                              race: CM("Austria_Circuit") },
+  { name: "British Grand Prix",         startDate: "2026-07-03", endDate: "2026-07-05", circuit: "Silverstone Circuit",              country: "United Kingdom",        flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Flag_of_the_United_Kingdom_%283-5%29.svg/1600px-Flag_of_the_United_Kingdom_%283-5%29.svg.png?20230715230526", race: CM("Great_Britain_Circuit") },
+  { name: "Belgian Grand Prix",         startDate: "2026-07-17", endDate: "2026-07-19", circuit: "Circuit de Spa-Francorchamps",     country: "Belgium",               flag: "https://upload.wikimedia.org/wikipedia/commons/9/92/Flag_of_Belgium_%28civil%29.svg",                                                                                 race: CM("Belgium_Circuit") },
+  { name: "Hungarian Grand Prix",       startDate: "2026-07-24", endDate: "2026-07-26", circuit: "Hungaroring",                      country: "Hungary",               flag: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Flag_of_Hungary.svg",                                                                                              race: CM("Hungary_Circuit") },
+  { name: "Dutch Grand Prix",           startDate: "2026-08-21", endDate: "2026-08-23", circuit: "Circuit Zandvoort",                country: "Netherlands",           flag: "https://upload.wikimedia.org/wikipedia/commons/2/20/Flag_of_the_Netherlands.svg",                                                                                      race: CM("Netherlands_Circuit") },
+  { name: "Italian Grand Prix",         startDate: "2026-09-04", endDate: "2026-09-06", circuit: "Autodromo Nazionale Monza",        country: "Italy",                 flag: "https://upload.wikimedia.org/wikipedia/commons/0/03/Flag_of_Italy.svg",                                                                                               race: CM("Italy_Circuit") },
+  { name: "Madrid Grand Prix",          startDate: "2026-09-11", endDate: "2026-09-13", circuit: "Madrid Street Circuit",            country: "Spain",                 flag: "https://upload.wikimedia.org/wikipedia/commons/9/9a/Flag_of_Spain.svg",                                                                                               race: CM("Spain_Circuit") },
+  { name: "Azerbaijan Grand Prix",      startDate: "2026-09-24", endDate: "2026-09-26", circuit: "Baku City Circuit",                country: "Azerbaijan",            flag: "https://upload.wikimedia.org/wikipedia/commons/d/dd/Flag_of_Azerbaijan.svg",                                                                                          race: CM("Baku_Circuit") },
+  { name: "Singapore Grand Prix",       startDate: "2026-10-09", endDate: "2026-10-11", circuit: "Marina Bay Street Circuit",        country: "Singapore",             flag: "https://upload.wikimedia.org/wikipedia/commons/4/48/Flag_of_Singapore.svg",                                                                                           race: CM("Singapore_Circuit") },
+  { name: "United States Grand Prix",   startDate: "2026-10-23", endDate: "2026-10-25", circuit: "Circuit of the Americas",          country: "United States",         flag: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg",                                                                                   race: CM("USA_Circuit") },
+  { name: "Mexico City Grand Prix",     startDate: "2026-10-30", endDate: "2026-11-01", circuit: "Autódromo Hermanos Rodríguez",     country: "Mexico",                flag: "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg",                                                                                              race: CM("Mexico_Circuit") },
+  { name: "São Paulo Grand Prix",       startDate: "2026-11-06", endDate: "2026-11-08", circuit: "Autódromo José Carlos Pace",       country: "Brazil",                flag: "https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg",                                                                                              race: CM("Brazil_Circuit") },
+  { name: "Las Vegas Grand Prix",       startDate: "2026-11-19", endDate: "2026-11-21", circuit: "Las Vegas Strip Circuit",          country: "United States",         flag: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg",                                                                                   race: CM("Las_Vegas_Circuit") },
+  { name: "Qatar Grand Prix",           startDate: "2026-11-27", endDate: "2026-11-29", circuit: "Losail International Circuit",     country: "Qatar",                 flag: "https://upload.wikimedia.org/wikipedia/commons/6/65/Flag_of_Qatar.svg",                                                                                              race: CM("Qatar_Circuit") },
+  { name: "Abu Dhabi Grand Prix",       startDate: "2026-12-04", endDate: "2026-12-06", circuit: "Yas Marina Circuit",               country: "United Arab Emirates",  flag: "https://upload.wikimedia.org/wikipedia/commons/c/cb/Flag_of_the_United_Arab_Emirates.svg",                                                                          race: CM("Abu_Dhabi_Circuit") },
 ];
 
 const driverStandings = [
-  { position: 1, driver: "Piastri",      nationality: "AUS", car: "McLaren Mercedes",                  points: 186 },
-  { position: 2, driver: "Norris",       nationality: "GBR", car: "McLaren Mercedes",                  points: 176 },
-  { position: 3, driver: "Verstappen",   nationality: "NED", car: "Red Bull Racing Honda RBPT",        points: 137 },
-  { position: 4, driver: "Russell",      nationality: "GBR", car: "Mercedes",                          points: 111 },
-  { position: 5, driver: "Leclerc",      nationality: "MON", car: "Ferrari",                           points: 94 },
-  { position: 6, driver: "Hamilton",     nationality: "GBR", car: "Ferrari",                           points: 71 },
-  { position: 7, driver: "Antonelli",    nationality: "ITA", car: "Mercedes",                          points: 48 },
-  { position: 8, driver: "Albon",        nationality: "THA", car: "Williams Mercedes",                 points: 42 },
-  { position: 9, driver: "Hadjar",       nationality: "FRA", car: "Racing Bulls Honda RBPT",           points: 21 },
-  { position: 10, driver: "Ocon",        nationality: "FRA", car: "Haas Ferrari",                      points: 20 },
-  { position: 11, driver: "Hulkenberg",  nationality: "GER", car: "Kick Sauber Ferrari",               points: 16 },
-  { position: 12, driver: "Stroll",      nationality: "CAN", car: "Aston Martin Aramco Mercedes",      points: 14 },
-  { position: 13, driver: "Sainz",       nationality: "ESP", car: "Williams Mercedes",                 points: 12 },
-  { position: 14, driver: "Gasly",       nationality: "FRA", car: "Alpine Renault",                    points: 11 },
-  { position: 15, driver: "Tsunoda",     nationality: "JPN", car: "Red Bull Racing Honda RBPT",        points: 10 },
-  { position: 16, driver: "Bearman",     nationality: "GBR", car: "Haas Ferrari",                      points: 6 },
-  { position: 17, driver: "Lawson",      nationality: "NZL", car: "Racing Bulls Honda RBPT",           points: 4 },
-  { position: 18, driver: "Alonso",      nationality: "ESP", car: "Aston Martin Aramco Mercedes",      points: 2 },
-  { position: 19, driver: "Bortoleto",   nationality: "BRA", car: "Kick Sauber Ferrari",               points: 0 },
-  { position: 20, driver: "Doohan",      nationality: "AUS", car: "Alpine Renault",                    points: 0 },
-  { position: 21, driver: "Colapinto",   nationality: "ARG", car: "Alpine Renault",                    points: 0 }
+  { position: 1,  driver: "Antonelli",  nationality: "ITA", car: "Mercedes",        points: 72 },
+  { position: 2,  driver: "Russell",    nationality: "GBR", car: "Mercedes",        points: 63 },
+  { position: 3,  driver: "Leclerc",    nationality: "MON", car: "Ferrari",         points: 49 },
+  { position: 4,  driver: "Hamilton",   nationality: "GBR", car: "Ferrari",         points: 41 },
+  { position: 5,  driver: "Norris",     nationality: "GBR", car: "McLaren",         points: 25 },
+  { position: 6,  driver: "Piastri",    nationality: "AUS", car: "McLaren",         points: 21 },
+  { position: 7,  driver: "Bearman",    nationality: "GBR", car: "Haas F1 Team",    points: 17 },
+  { position: 8,  driver: "Gasly",      nationality: "FRA", car: "Alpine",          points: 15 },
+  { position: 9,  driver: "Verstappen", nationality: "NED", car: "Red Bull Racing", points: 12 },
+  { position: 10, driver: "Lawson",     nationality: "NZL", car: "Racing Bulls",    points: 10 },
+  { position: 11, driver: "Lindblad",   nationality: "GBR", car: "Racing Bulls",    points: 4  },
+  { position: 12, driver: "Hadjar",     nationality: "FRA", car: "Red Bull Racing", points: 4  },
+  { position: 13, driver: "Bortoleto",  nationality: "BRA", car: "Audi",            points: 2  },
+  { position: 14, driver: "Sainz",      nationality: "ESP", car: "Williams",        points: 2  },
+  { position: 15, driver: "Ocon",       nationality: "FRA", car: "Haas F1 Team",    points: 1  },
+  { position: 16, driver: "Colapinto",  nationality: "ARG", car: "Alpine",          points: 1  },
+  { position: 17, driver: "Hulkenberg", nationality: "GER", car: "Audi",            points: 0  },
+  { position: 18, driver: "Albon",      nationality: "THA", car: "Williams",        points: 0  },
+  { position: 19, driver: "Bottas",     nationality: "FIN", car: "Cadillac",        points: 0  },
+  { position: 20, driver: "Perez",      nationality: "MEX", car: "Cadillac",        points: 0  },
+  { position: 21, driver: "Alonso",     nationality: "ESP", car: "Aston Martin",    points: 0  },
+  { position: 22, driver: "Stroll",     nationality: "CAN", car: "Aston Martin",    points: 0  },
 ];
 
 const teamStandings = [
-  { position: 1,  team: "McLaren Mercedes",             points: 362 },
-  { position: 2,  team: "Ferrari",                      points: 165 },
-  { position: 3,  team: "Mercedes",                     points: 159 },
-  { position: 4,  team: "Red Bull Racing Honda RBPT",   points: 144 },
-  { position: 5,  team: "Williams Mercedes",            points: 54 },
-  { position: 6,  team: "Racing Bulls Honda RBPT",      points: 28 },
-  { position: 7,  team: "Haas Ferrari",                 points: 26 },
-  { position: 8,  team: "Kick Sauber Ferrari",          points: 16 },
-  { position: 9,  team: "Aston Martin Aramco Mercedes", points: 16 },
-  { position: 10, team: "Alpine Renault",               points: 11 }
+  { position: 1,  team: "Mercedes",        points: 135 },
+  { position: 2,  team: "Ferrari",         points: 90  },
+  { position: 3,  team: "McLaren",         points: 46  },
+  { position: 4,  team: "Haas F1 Team",    points: 18  },
+  { position: 5,  team: "Alpine",          points: 16  },
+  { position: 6,  team: "Red Bull Racing", points: 16  },
+  { position: 7,  team: "Racing Bulls",    points: 14  },
+  { position: 8,  team: "Audi",            points: 2   },
+  { position: 9,  team: "Williams",        points: 2   },
+  { position: 10, team: "Cadillac",        points: 0   },
+  { position: 11, team: "Aston Martin",    points: 0   },
 ];
 
 const raceResults = [
   {
-    grandPrix: "Australia",
-    date: "2025-03-16",
-    winner: "Norris",
-    car: "McLaren Mercedes",
-    laps: 57,
-    time: "1:42:06.304"
+    grandPrix: "Australian Grand Prix",
+    date: "2026-03-08",
+    winner: "Russell", car: "Mercedes", laps: 58, time: "1:23:06.801",
+    p2: "Antonelli", p2time: "+2.974",
+    p3: "Leclerc",   p3time: "+15.519",
   },
   {
-    grandPrix: "China",
-    date: "2025-03-23",
-    winner: "Piastri",
-    car: "McLaren Mercedes",
-    laps: 56,
-    time: "1:30:55.026"
+    grandPrix: "Chinese Grand Prix",
+    date: "2026-03-15",
+    winner: "Antonelli", car: "Mercedes", laps: 56, time: "1:33:15.607",
+    p2: "Russell",  p2time: "+5.515",
+    p3: "Hamilton", p3time: "+25.267",
   },
   {
-    grandPrix: "Japan",
-    date: "2025-04-06",
-    winner: "Verstappen",
-    car: "Red Bull Racing Honda RBPT",
-    laps: 53,
-    time: "1:22:06.983"
+    grandPrix: "Japanese Grand Prix",
+    date: "2026-03-29",
+    winner: "Antonelli", car: "Mercedes", laps: 53, time: "1:28:03.403",
+    p2: "Piastri", p2time: "+13.722",
+    p3: "Leclerc", p3time: "+15.270",
   },
-  {
-    grandPrix: "Bahrain",
-    date: "2025-04-13",
-    winner: "Piastri",
-    car: "McLaren Mercedes",
-    laps: 57,
-    time: "1:35:39.435"
-  },
-  {
-    grandPrix: "Saudi Arabia",
-    date: "2025-04-20",
-    winner: "Piastri",
-    car: "McLaren Mercedes",
-    laps: 50,
-    time: "1:21:06.758"
-  },
-  {
-    grandPrix: "Miami",
-    date: "2025-05-04",
-    winner: "Piastri",
-    car: "McLaren Mercedes",
-    laps: 57,
-    time: "1:28:51.587"
-  },
-  {
-    grandPrix: "Emilia-Romagna",
-    date: "2025-05-18",
-    winner: "Verstappen",
-    car: "Red Bull Racing Honda RBPT",
-    laps: 63,
-    time: "1:31:33.199"
-  },
-  {
-    grandPrix: "Monaco",
-    date: "2025-05-25",
-    winner: "Norris",
-    car: "McLaren Mercedes",
-    laps: 78,
-    time: "1:40:33.843"
-  },
-  {
-    grandPrix: "Spain",
-    date: "2025-06-01",
-    winner: "Piastri",
-    car: "McLaren Mercedes",
-    laps: 66,
-    time: "1:32:57.375"
-  }
 ];
 
 
