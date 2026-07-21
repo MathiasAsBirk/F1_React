@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import styles from "./infodriver.module.css";
+import styles from "./Infodriver.module.css";
 import driverStats from "../infoDriver/data/driverStats.json";
 import { api } from "../../api/client";
 import Modal from "../ui/Modal";
