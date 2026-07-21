@@ -1,13 +1,17 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const raceSchema = new mongoose.Schema({
-  name: String,
-  startDate: String,
-  endDate: String,
-  circuit: String,
-  country: String,
-  flag: String,
-  race: String 
-});
+  name: { type: String, required: true, trim: true, maxlength: 120, unique: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  circuit: { type: String, required: true, trim: true, maxlength: 140 },
+  country: { type: String, required: true, trim: true, maxlength: 80 },
+  flag: { type: String, trim: true, maxlength: 1_000, default: "" },
+  race: { type: String, trim: true, maxlength: 1_000, default: "" },
+}, { timestamps: true, versionKey: false });
 
-export default mongoose.model('Race', raceSchema, 'races');
+raceSchema.path("endDate").validate(function validateEndDate(value) {
+  return !this.startDate || value >= this.startDate;
+}, "Race end date must be on or after its start date.");
+
+export default mongoose.models.Race || mongoose.model("Race", raceSchema, "races");

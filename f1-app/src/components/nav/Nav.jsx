@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import styles from "./Nav.module.css";
+import { CURRENT_SEASON } from "../../constants";
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useState(false);           // mobile menu
@@ -39,9 +40,9 @@ export default function Nav() {
     <>
       <header className={styles.headerRoot}>
         <div className={`${styles.wrapper} ${styles.navFlex}`}>
-          <a className={styles.brand} href="/">
+          <Link className={styles.brand} to="/" onClick={closeAll}>
             F1<span className={styles.brandLight}>Info</span>
-          </a>
+          </Link>
 
           <button
             className={styles.burger}
@@ -55,54 +56,54 @@ export default function Nav() {
           <nav className={`${styles.navMenu} ${isOpen ? styles.open : ""}`}>
             <ul className={styles.navList}>
               <li>
-                <a
+                <Link
                   className={`${styles.navLink} ${isActive("/") ? styles.active : ""}`}
-                  href="/"
+                  to="/"
                   onClick={closeAll}
                   aria-current={isActive("/") ? "page" : undefined}
                 >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   className={`${styles.navLink} ${isActive("/drivers") ? styles.active : ""}`}
-                  href="/drivers"
+                  to="/drivers"
                   onClick={closeAll}
                   aria-current={isActive("/drivers") ? "page" : undefined}
                 >
                   Drivers/Teams
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   className={`${styles.navLink} ${isActive("/races") ? styles.active : ""}`}
-                  href="/races"
+                  to="/races"
                   onClick={closeAll}
                   aria-current={isActive("/races") ? "page" : undefined}
                 >
                   Races
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   className={`${styles.navLink} ${isActive("/standings") ? styles.active : ""}`}
-                  href="/standings"
+                  to="/standings"
                   onClick={closeAll}
                   aria-current={isActive("/standings") ? "page" : undefined}
                 >
                   Standings
-                </a>
+                </Link>
               </li>
               <li>
-                <a
+                <Link
                   className={`${styles.navLink} ${isActive("/news") ? styles.active : ""}`}
-                  href="/news"
+                  to="/news"
                   onClick={closeAll}
                   aria-current={isActive("/news") ? "page" : undefined}
                 >
-                  News
-                </a>
+                  Guides
+                </Link>
               </li>
 
               {/* Games dropdown */}
@@ -118,8 +119,8 @@ export default function Nav() {
                 </button>
 
                 <ul className={`${styles.submenu} ${isGamesOpen ? styles.submenuOpen : ""}`} role="menu">
-                  <li><a role="menuitem" className={styles.submenuLink} href="/light" onClick={closeAll}>Lights Out (Reaction)</a></li>
-                  <li><a role="menuitem" className={styles.submenuLink} href="/team" onClick={closeAll}>F1 Manager</a></li>
+                  <li><Link role="menuitem" className={styles.submenuLink} to="/light" onClick={closeAll}>Lights Out (Reaction)</Link></li>
+                  <li><Link role="menuitem" className={styles.submenuLink} to="/team" onClick={closeAll}>F1 Manager</Link></li>
                   {/* <li><a role="menuitem" className={styles.submenuLink} href="/f1chess" onClick={closeAll}>F1 Chess</a></li> */}
                 </ul>
               </li>
@@ -131,29 +132,29 @@ export default function Nav() {
       </header>
 
       {/* News ticker (no horizontal push, smooth loop) */}
-      <div className={styles.ticker} aria-label="Latest headlines">
+      <div className={styles.ticker} aria-label="F1Info highlights">
         <div className={styles.tickerMask}>
           <div className={styles.tickerTrack}>
             <div className={styles.tickerRow}>
               <span className={styles.tickerDot} />
-              Formula 1 reveals calendar for 2026 season 
+              Explore the {CURRENT_SEASON} race calendar
               <span className={styles.tickerDot} />
-              All the highlights of the F1 calendar 
+              Compare drivers and constructors
               <span className={styles.tickerDot} />
-              RACE WEEK: 5 storylines
+              Build a team in F1 Manager
               <span className={styles.tickerDot} />
-              Formula 2 and Formula 3 2026 calendars 
+              Test your reaction at Lights Out
             </div>
             {/* duplicate row for seamless loop */}
             <div className={styles.tickerRow} aria-hidden="true">
               <span className={styles.tickerDot} />
-              Formula 1 reveals calendar for 2026 season 
+              Explore the {CURRENT_SEASON} race calendar
               <span className={styles.tickerDot} />
-              All the highlights of the F1 calendar 
+              Compare drivers and constructors
               <span className={styles.tickerDot} />
-              RACE WEEK: 5 storylines 
+              Build a team in F1 Manager
               <span className={styles.tickerDot} />
-              Formula 2 and Formula 3 2026 calendars 
+              Test your reaction at Lights Out
             </div>
           </div>
         </div>

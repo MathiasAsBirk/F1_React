@@ -1,59 +1,75 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "../styles/News.module.css";
 import { STORAGE_KEYS } from "../constants";
+import Modal from "../components/ui/Modal";
 
 const STORAGE_KEY = STORAGE_KEYS.NEWS;
+const MAX_IMPORT_SIZE = 1_000_000;
+
+function normalizeNewsItem(item) {
+  if (!item || typeof item !== "object" || typeof item.title !== "string") return null;
+  return {
+    id: String(item.id || crypto.randomUUID()),
+    title: item.title.slice(0, 180),
+    category: String(item.category || "News").slice(0, 40),
+    image: String(item.image || "").slice(0, 1_000),
+    summary: String(item.summary || "").slice(0, 600),
+    content: String(item.content || "").slice(0, 12_000),
+    author: String(item.author || "F1Info").slice(0, 80),
+    date: String(item.date || "").slice(0, 40),
+  };
+}
 
 const initialNews = [
   {
-    id: "2",
-    title: "HALF TERM REPORT: Haas' best and worst moments from 2025",
-    category: "News",
-    image: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2025/Half%20term%20reports%202025/Haas/TEAM%20PREVIEWSHALF%20TERM%20REPORTS%20V1%20(2).webp",
-    summary: "As we reach the halfway point of the season, it's time to look back on how Haas' campaign has unfolded so far with their new-for-2025 line-up of Esteban Ocon and Ollie Bearman.",
-    content: "After a respectable P7 finish in 2024, Haas currently hold ninth place in the Teams' Championship at the midway point of 2025, a season in which the team have fielded an all-new line-up in Esteban Ocon and Ollie Bearman. Amid a tight midfield battle, can the American outfit find more consistency during the remainder of the campaign? Let's take a look at their half term report…",
-    author: "F1.com",
-    date: "2025-08-06",
+    id: "strategy-undercut",
+    title: "How the undercut turns tyre life into track position",
+    category: "Strategy",
+    image: "",
+    summary: "Why stopping first can move a driver ahead—and why traffic, warm-up and tyre degradation can make the gamble fail.",
+    content: "An undercut begins when a chasing driver pits before the car ahead. Fresh tyres can produce a faster out-lap than the rival's final lap on worn rubber. If the time gained is larger than the original gap, the positions swap when the leading car stops. The move depends on clear traffic, quick tyre warm-up and enough remaining tyre life. Teams also have to consider whether stopping early leaves the driver vulnerable later in the stint.",
+    author: "F1Info Editorial",
+    date: "2026-01-12",
   },
   {
-    id: "3",
-    title: "IN NUMBERS: 12 stats that show just how gripping the 2025 F1 season has been so far",
-    category: "Feature",
-    image: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2025/Miscellaneous/statistics-2025-feature.webp",
-    summary: "With the Formula 1 paddock pausing for summer, we take a numerical look at what's happened across the opening half of the year…",
-    content: "F1 has put on another must-see show this season, with a fascinating championship battle, ultra-close margins and unexpected results all featuring. As the drivers and teams enjoy their summer break, we run through some telling statistics from the campaign so far ahead of what looks set to be an edge-of-your-seat 10-round run to see out the year…",
-    author: "F1.com",
-    date: "2025-08-05",
+    id: "setup-balance",
+    title: "Why one car setup cannot be fastest everywhere",
+    category: "Engineering",
+    image: "",
+    summary: "Monza rewards low drag, Monaco demands grip, and every setup choice creates a compromise elsewhere.",
+    content: "A Formula 1 setup balances aerodynamic load, drag, mechanical grip, tyre temperature and stability. Low-drag wings help on long straights but reduce confidence in fast corners. Softer suspension can improve traction over bumps while making the aerodynamic platform less stable. Engineers use simulation and practice data to find the compromise that best matches the circuit, weather and driver's preferences.",
+    author: "F1Info Editorial",
+    date: "2026-01-10",
   },
   {
-    id: "4",
-    title: "HALF TERM REPORT: Alpine's best and worst moments from 2025",
-    category: "News",
-    image: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2025/Half%20term%20reports%202025/Alpine/TEAM%20PREVIEWSHALF%20TERM%20REPORTS%20V1.webp",
-    summary: "With Alpine currently last in the 2025 Teams' Standings, we sum up their season so far in their half term report.",
-    content: "Alpine have had an eventful season so far – again. After something of a rollercoaster 2024 campaign, they went into this year with a pairing of Pierre Gasly and Jack Doohan, only for the rookie Australian to find himself back on the sidelines after the team opted for the services of Franco Colapinto from Imola onwards. However, amid another Team Principal departure, the underlying facts are that Alpine's car isn't quite fast enough this season, leaving the Enstone-based outfit sitting bottom of the Teams' Standings.",
-    author: "F1.com",
-    date: "2025-08-05",
+    id: "safety-car",
+    title: "What changes when the safety car is deployed",
+    category: "Race control",
+    image: "",
+    summary: "The field compresses, pit stops become cheaper, and strategy teams have seconds to rethink the race.",
+    content: "During a safety-car period every driver must slow down, so the time lost by entering the pits becomes smaller relative to cars circulating on track. That can create a valuable opportunity for a tyre change. The field also closes up, removing gaps that drivers built earlier. Teams must consider tyre availability, restart performance, track position and whether the race is likely to resume before making the call.",
+    author: "F1Info Editorial",
+    date: "2026-01-08",
   },
   {
-    id: "5",
-    title: "'I'm not too worried' – Verstappen on dropping out of title contention",
-    category: "News",
-    image: "https://media.formula1.com/image/upload/c_lfill,w_3392/q_auto/v1740000000/fom-website/2025/Red%20Bull/NEW%20F1%20website%20header%20templates.webp",
-    summary: "F1.com catches up with reigning four-time World Champion Max Verstappen midway through a rollercoaster 2025 season.",
-    content: "Max Verstappen finds himself in territory he's not experienced since 2020 – driving at a high level, but without a car capable of fighting consistently for race wins and the championship.",
-    author: "F1.com",
-    date: "2025-08-05",
+    id: "championship-points",
+    title: "How drivers and constructors score a championship",
+    category: "Rules",
+    image: "",
+    summary: "Two championships run together, but team-mates contribute to them in different ways.",
+    content: "Each driver keeps the points they score toward the Drivers' Championship. For the Constructors' Championship, a team combines the points scored by both of its cars. That makes consistency across two drivers especially valuable to a constructor. The championship tables can therefore tell different stories: one outstanding driver may lead the individual contest while another team has the strongest overall pairing.",
+    author: "F1Info Editorial",
+    date: "2026-01-06",
   },
   {
-    id: "6",
-    title: "Best races, star rookies and drivers under pressure – Our writers reflect on 2025 so far",
-    category: "News",
-    image: "https://media.formula1.com/image/upload/t_16by9Centre/c_lfill,w_3392/q_auto/v1740000000/fom-website/2025/Miscellaneous/Writers%20on%202025%20header%20image.webp",
-    summary: "At the halfway point of the 2025 season, we asked our writers to give us their take on the campaign so far – as well as making some bold predictions for the rest of the year.",
-    content: "As Formula 1 embarks on its traditional summer break, now is the perfect time to reflect on what has been an action-packed first half of the season. We asked our writers Lawrence Barretto, Chris Medland, David Tremayne, Alex Jacques and James Hinchcliffe to give us their take on the campaign so far, as well as making some bold predictions for what might happen next.",
-    author: "F1.com",
-    date: "2025-08-05",
+    id: "tyre-compounds",
+    title: "A beginner's guide to Formula 1 tyre compounds",
+    category: "Explainer",
+    image: "",
+    summary: "Soft, medium and hard tyres trade immediate grip against durability over a race stint.",
+    content: "Softer tyres usually reach peak grip quickly and produce faster lap times, but they tend to wear sooner. Harder tyres sacrifice some immediate performance for a longer useful life. The best choice depends on track temperature, surface roughness, fuel load and traffic. Teams plan before the race, then adjust as real degradation and changing conditions reveal which compound is working best.",
+    author: "F1Info Editorial",
+    date: "2026-01-04",
   },
 ];
 
@@ -70,7 +86,7 @@ export default function News() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setNews(parsed);
+        if (Array.isArray(parsed)) setNews(parsed.map(normalizeNewsItem).filter(Boolean));
       }
     } catch (e) {
       console.warn("Failed to parse saved news:", e);
@@ -139,11 +155,20 @@ export default function News() {
   const handleImportFile  = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MAX_IMPORT_SIZE) {
+      alert("That file is too large. The maximum import size is 1 MB.");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const parsed = JSON.parse(ev.target.result);
-        if (Array.isArray(parsed)) { saveNews(parsed); }
+        if (Array.isArray(parsed)) {
+          const normalized = parsed.map(normalizeNewsItem).filter(Boolean);
+          if (!normalized.length) throw new Error("No valid news items");
+          saveNews(normalized);
+        }
         else { alert("Invalid JSON (expected an array)."); }
       } catch { alert("Failed to parse JSON file."); }
     };
@@ -154,7 +179,7 @@ export default function News() {
   return (
     <section className={styles.newsWrapper}>
       <h2 className={styles.sectionTitle}>
-        F1 News
+        F1 Explainers
         <span className={styles.titleActions}>
           <label className={styles.editLabel}>
             <input
@@ -162,7 +187,7 @@ export default function News() {
               checked={editMode}
               onChange={() => setEditMode(!editMode)}
             />
-            Edit Mode
+            Local editor
           </label>
 
           {editMode && (
@@ -182,33 +207,37 @@ export default function News() {
           )}
         </span>
       </h2>
+      <p className={styles.archiveNote}>Original guides to racing, engineering and strategy. Local editor changes stay in this browser only.</p>
 
       <div className={styles.newsGrid}>
         {news.map((item) => (
-          <div key={item.id} className={styles.card} onClick={() => openModal(item)}>
-            <img src={item.image} alt={item.title} className={styles.image} />
-            <div className={styles.content}>
-              <span className={styles.category}>{item.category}</span>
-              <h3 className={styles.title}>{item.title}</h3>
-              <p className={styles.summary}>{item.summary}</p>
-              {editMode && (
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <article key={item.id} className={styles.card}>
+            <button className={styles.cardOpen} onClick={() => openModal(item)} aria-label={`Open article: ${item.title}`}>
+              {item.image
+                ? <img src={item.image} alt="" className={styles.image} loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
+                : <span className={styles.imagePlaceholder} aria-hidden="true">F1INFO</span>}
+              <span className={styles.content}>
+                <span className={styles.category}>{item.category}</span>
+                <strong className={styles.title}>{item.title}</strong>
+                <span className={styles.summary}>{item.summary}</span>
+              </span>
+            </button>
+            {editMode && (
+              <div className={styles.cardActions}>
+                <button className={styles.deleteBtn} onClick={() => handleDelete(item.id)}>Delete</button>
+              </div>
+            )}
+          </article>
         ))}
       </div>
 
       {activeNews && (
-        <div className={styles.modalOverlay} onClick={handleCancel}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <Modal
+          overlayClassName={styles.modalOverlay}
+          contentClassName={styles.modal}
+          onClose={handleCancel}
+          labelledBy="news-modal-title"
+        >
             {!editMode ? (
               <>
                 {activeNews.image && (
@@ -217,32 +246,51 @@ export default function News() {
                 <span className={styles.modalMeta}>
                   {activeNews.date}{activeNews.author ? ` · ${activeNews.author}` : ""}
                 </span>
-                <h3 className={styles.modalTitle}>{activeNews.title}</h3>
+                <h3 id="news-modal-title" className={styles.modalTitle}>{activeNews.title}</h3>
                 <p className={styles.modalContent}>{activeNews.content}</p>
                 <button className={styles.closeButton} onClick={handleCancel}>Close</button>
               </>
             ) : (
               <>
                 <input
+                  id="news-modal-title"
                   className={styles.editTitle}
+                  aria-label="Article title"
                   value={editDraft.title}
                   onChange={(e) => handleEditChange("title", e.target.value)}
                   placeholder="Title"
                 />
                 <input
                   className={styles.editField}
+                  aria-label="Article category"
                   value={editDraft.category}
                   onChange={(e) => handleEditChange("category", e.target.value)}
                   placeholder="Category"
                 />
                 <input
                   className={styles.editField}
+                  aria-label="Article author"
+                  value={editDraft.author || ""}
+                  onChange={(e) => handleEditChange("author", e.target.value)}
+                  placeholder="Author"
+                />
+                <input
+                  className={styles.editField}
+                  aria-label="Article image URL"
+                  value={editDraft.image || ""}
+                  onChange={(e) => handleEditChange("image", e.target.value)}
+                  placeholder="Image URL (optional)"
+                />
+                <input
+                  className={styles.editField}
+                  aria-label="Article date"
                   value={editDraft.date || ""}
                   onChange={(e) => handleEditChange("date", e.target.value)}
                   placeholder="Date (YYYY-MM-DD or text)"
                 />
                 <textarea
                   className={styles.editTextarea}
+                  aria-label="Article summary"
                   value={editDraft.summary}
                   onChange={(e) => handleEditChange("summary", e.target.value)}
                   rows={2}
@@ -250,6 +298,7 @@ export default function News() {
                 />
                 <textarea
                   className={styles.editContent}
+                  aria-label="Article content"
                   value={editDraft.content}
                   onChange={(e) => handleEditChange("content", e.target.value)}
                   rows={10}
@@ -261,8 +310,7 @@ export default function News() {
                 </div>
               </>
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </section>
   );

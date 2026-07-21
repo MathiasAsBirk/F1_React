@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import Team from './models/team.model.js';
 import Race from './models/race.model.js';
-import DriverStanding from './models/driverStanding.model.js';
+import DriverStanding from './models/driverstanding.model.js';
 import TeamStanding from './models/teamStanding.model.js';
 import RaceResult from './models/raceResult.model.js';
 
@@ -391,11 +392,15 @@ const raceResults = [
 
 
 
-const MONGODB_URI = 'mongodb://127.0.0.1:27017/F1-API';
+dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || '.env.local' });
 
 async function seed() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is not configured.');
+    if (process.env.SEED_CONFIRM !== 'replace') {
+      throw new Error('Set SEED_CONFIRM=replace before replacing database collections.');
+    }
+    await mongoose.connect(process.env.MONGODB_URI);
 
     await Team.deleteMany({});
     await Team.insertMany(teams);
@@ -413,10 +418,11 @@ async function seed() {
     await RaceResult.insertMany(raceResults);
 
     console.log('Seed done!');
-    process.exit(0);
   } catch (error) {
     console.error('Seeding error:', error);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await mongoose.connection.close();
   }
 }
 

@@ -1,64 +1,57 @@
 import express from "express";
-import { simpleAuth } from "../middleware/auth.middleware.js";
-import DriverStanding from "../models/driverStanding.model.js";
+import { createAdminSession, requireAdmin } from "../middleware/auth.middleware.js";
+import { rateLimit } from "../middleware/security.middleware.js";
+import DriverStanding from "../models/driverstanding.model.js";
 import TeamStanding from "../models/teamStanding.model.js";
 
 const router = express.Router();
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Helper: escape regex
-const esc = (s="") => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+router.post(
+  "/session",
+  rateLimit({ windowMs: 15 * 60_000, max: 8, namespace: "admin-login" }),
+  createAdminSession,
+);
 
-/**
- * PUT /api/admin/standing/driver
- * body: { driver: "Norris", points: 180 }
- */
-router.put("/standing/driver", simpleAuth, async (req, res) => {
+router.put("/standings/driver", requireAdmin, async (req, res) => {
   try {
-    console.log("PUT /admin/standing/driver", { headers: req.headers.authorization, body: req.body });
-
-    const { driver, points } = req.body || {};
-    if (!driver || Number.isNaN(Number(points))) {
-      return res.status(400).json({ message: "driver (string) and points (number) are required" });
+    const driver = typeof req.body?.driver === "string" ? req.body.driver.trim() : "";
+    const points = Number(req.body?.points);
+    if (!driver || !Number.isFinite(points) || points < 0 || points > 10_000) {
+      return res.status(400).json({ message: "A driver and points between 0 and 10,000 are required." });
     }
 
     const updated = await DriverStanding.findOneAndUpdate(
-      { driver: { $regex: new RegExp(`^${esc(driver)}$`, "i") } }, // case-insensitive exact
-      { $set: { points: Number(points) } },
-      { new: true }
+      { driver: { $regex: new RegExp(`^${escapeRegex(driver)}$`, "i") } },
+      { $set: { points } },
+      { new: true, runValidators: true },
     );
-
-    if (!updated) return res.status(404).json({ message: `Driver '${driver}' not found` });
-    return res.json({ ok: true, data: updated });
-  } catch (err) {
-    console.error("PUT /admin/standing/driver failed:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    if (!updated) return res.status(404).json({ message: `Driver '${driver}' was not found.` });
+    return res.json({ data: updated });
+  } catch (error) {
+    console.error("Driver standings update failed:", error.message);
+    return res.status(500).json({ message: "Driver standings could not be updated." });
   }
 });
 
-/**
- * PUT /api/admin/standing/team
- * body: { team: "Ferrari", points: 165 }
- */
-router.put("/standing/team", simpleAuth, async (req, res) => {
+router.put("/standings/team", requireAdmin, async (req, res) => {
   try {
-    console.log("PUT /admin/standing/team", { headers: req.headers.authorization, body: req.body });
-
-    const { team, points } = req.body || {};
-    if (!team || Number.isNaN(Number(points))) {
-      return res.status(400).json({ message: "team (string) and points (number) are required" });
+    const team = typeof req.body?.team === "string" ? req.body.team.trim() : "";
+    const points = Number(req.body?.points);
+    if (!team || !Number.isFinite(points) || points < 0 || points > 10_000) {
+      return res.status(400).json({ message: "A team and points between 0 and 10,000 are required." });
     }
 
     const updated = await TeamStanding.findOneAndUpdate(
-      { team: { $regex: new RegExp(`^${esc(team)}$`, "i") } }, // case-insensitive exact
-      { $set: { points: Number(points) } },
-      { new: true }
+      { team: { $regex: new RegExp(`^${escapeRegex(team)}$`, "i") } },
+      { $set: { points } },
+      { new: true, runValidators: true },
     );
-
-    if (!updated) return res.status(404).json({ message: `Team '${team}' not found` });
-    return res.json({ ok: true, data: updated });
-  } catch (err) {
-    console.error("PUT /admin/standing/team failed:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    if (!updated) return res.status(404).json({ message: `Team '${team}' was not found.` });
+    return res.json({ data: updated });
+  } catch (error) {
+    console.error("Team standings update failed:", error.message);
+    return res.status(500).json({ message: "Team standings could not be updated." });
   }
 });
 

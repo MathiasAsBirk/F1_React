@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { Link } from "react-router-dom";
 import styles from "../styles/Home.module.css";
-import { API_URL, STORAGE_KEYS } from "../constants";
+import { CURRENT_SEASON, DEFAULT_GUIDE_COUNT, STORAGE_KEYS } from "../constants";
+import { api } from "../api/client";
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
@@ -16,15 +17,19 @@ export default function Home() {
       try {
         setErr("");
         const [d, t, r] = await Promise.all([
-          axios.get(`${API_URL}/api/driverstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API_URL}/api/teamstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
+          api.get("/standings/drivers"),
+          api.get("/standings/teams"),
+          api.get("/race-results"),
         ]);
         if (!isMounted) return;
         setDrivers(Array.isArray(d.data) ? d.data : []);
         setTeams(Array.isArray(t.data) ? t.data : []);
         setResults(Array.isArray(r.data) ? r.data : []);
       } catch {
+        if (!isMounted) return;
+        setDrivers([]);
+        setTeams([]);
+        setResults([]);
         setErr("Couldn't reach the API right now.");
       } finally {
         if (isMounted) setLoading(false);
@@ -68,10 +73,10 @@ export default function Home() {
   const newsCount = useMemo(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.NEWS);
-      if (!raw) return null;
+      if (!raw) return DEFAULT_GUIDE_COUNT;
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr.length : null;
-    } catch { return null; }
+      return Array.isArray(arr) ? arr.length : DEFAULT_GUIDE_COUNT;
+    } catch { return DEFAULT_GUIDE_COUNT; }
   }, []);
 
   return (
@@ -80,15 +85,15 @@ export default function Home() {
       {/* HERO */}
       <section className={styles.hero}>
         <div className={styles.heroInner}>
-          <span className={styles.seasonBadge}>2026 Season</span>
+          <span className={styles.seasonBadge}>{CURRENT_SEASON} Season</span>
           <h1 className={styles.title}>Formula 1<br /><span className={styles.titleAccent}>Hub</span></h1>
           <p className={styles.tagline}>
             Standings, results, news, and a fully-playable manager sim — all in one place.
           </p>
           <div className={styles.ctaRow}>
-            <a className={styles.ctaPrimary} href="/standings">View Standings</a>
-            <a className={styles.ctaSecondary} href="/team">Play F1 Manager</a>
-            <a className={styles.ctaGhost} href="/light">Lights Out</a>
+            <Link className={styles.ctaPrimary} to="/standings">View Standings</Link>
+            <Link className={styles.ctaSecondary} to="/team">Play F1 Manager</Link>
+            <Link className={styles.ctaGhost} to="/light">Lights Out</Link>
           </div>
         </div>
         <div className={styles.heroAccent} aria-hidden="true" />
@@ -99,7 +104,7 @@ export default function Home() {
         <Stat label="Races Completed" value={racesCount || "—"} />
         <Stat label="Drivers" value={drivers.length || "—"} />
         <Stat label="Teams" value={teams.length || "—"} />
-        <Stat label="News Articles" value={newsCount ?? "—"} />
+        <Stat label="Explainers" value={newsCount ?? "—"} />
       </div>
 
       {/* LATEST RACE — featured */}
@@ -133,22 +138,22 @@ export default function Home() {
           ) : (
             <div className={styles.empty}>No results yet.</div>
           )}
-          <a className={styles.featuredLink} href="/races">Full race calendar →</a>
+          <Link className={styles.featuredLink} to="/races">Full race calendar →</Link>
         </div>
       </section>
 
       {/* QUICK LINKS */}
       <section className={styles.quick}>
-        <NavCard href="/drivers" title="Drivers & Teams"  sub="Full 2026 grid overview" />
+        <NavCard href="/drivers" title="Drivers & Teams"  sub={`Full ${CURRENT_SEASON} grid overview`} />
         <NavCard href="/races"   title="Races"            sub="Calendar, winners & circuits" />
-        <NavCard href="/news"    title="News"             sub="Latest stories & features" />
+        <NavCard href="/news"    title="F1 Explainers"    sub="Strategy, rules and engineering" />
         <NavCard href="/team"    title="F1 Manager"       sub="Build your dream team" />
       </section>
 
       {/* LEADERBOARDS */}
       <section className={styles.leaders}>
         <LeaderBlock title="Drivers Championship" link="/standings" linkLabel="Full table">
-          {loading ? <SkeletonRows rows={5} /> : topDrivers.map((d, i) => (
+          {loading ? <SkeletonRows rows={5} /> : topDrivers.length ? topDrivers.map((d, i) => (
             <Row
               key={d.driver || i}
               pos={d.position ?? i + 1}
@@ -156,22 +161,22 @@ export default function Home() {
               right={`${d.points ?? "—"} pts`}
               nat={d.nationality}
             />
-          ))}
+          )) : <div className={styles.empty}>Driver standings are unavailable.</div>}
         </LeaderBlock>
 
         <LeaderBlock title="Constructors Championship" link="/standings?tab=teams" linkLabel="Full table">
-          {loading ? <SkeletonRows rows={5} /> : topTeams.map((t, i) => (
+          {loading ? <SkeletonRows rows={5} /> : topTeams.length ? topTeams.map((t, i) => (
             <Row
               key={t.team || i}
               pos={t.position ?? i + 1}
               name={t.team}
               right={`${t.points ?? "—"} pts`}
             />
-          ))}
+          )) : <div className={styles.empty}>Constructor standings are unavailable.</div>}
         </LeaderBlock>
       </section>
 
-      {err && <p className={styles.error}>{err}</p>}
+      {err && <p className={styles.error} role="alert">{err}</p>}
     </div>
   );
 }
@@ -189,13 +194,13 @@ function Stat({ label, value }) {
 
 function NavCard({ href, title, sub }) {
   return (
-    <a className={styles.navCard} href={href}>
+    <Link className={styles.navCard} to={href}>
       <div>
         <div className={styles.navTitle}>{title}</div>
         <div className={styles.navSub}>{sub}</div>
       </div>
       <span className={styles.navArrow}>→</span>
-    </a>
+    </Link>
   );
 }
 
@@ -215,7 +220,7 @@ function LeaderBlock({ title, link, linkLabel, children }) {
     <div className={styles.leaderCol}>
       <div className={styles.blockHeader}>
         <h3 className={styles.h3}>{title}</h3>
-        <a className={styles.smallLink} href={link}>{linkLabel}</a>
+        <Link className={styles.smallLink} to={link}>{linkLabel}</Link>
       </div>
       <div className={styles.list}>{children}</div>
     </div>
@@ -230,10 +235,6 @@ function Row({ pos, name, right, nat }) {
       <span className={styles.rowRight}>{right}</span>
     </div>
   );
-}
-
-function Empty({ msg }) {
-  return <div className={styles.empty}>{msg}</div>;
 }
 
 function SkeletonRows({ rows = 3 }) {

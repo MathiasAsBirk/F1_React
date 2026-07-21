@@ -114,9 +114,24 @@ export const RIVALS = [
 ];
 
 export const SPONSORS = [
-  { id:"bronze", name:"Bronze", base:3, bonus:{ podium:1, doublePoints:1 },              desc:"Small retainer. Rewards consistent points." },
-  { id:"silver", name:"Silver", base:4, bonus:{ podium:2, pole:1 },                      desc:"Better retainer. Loves podiums and poles."  },
-  { id:"gold",   name:"Gold",   base:5, bonus:{ podium:3, fastest:1, doublePoints:1 },   desc:"High retainer. Pays for big results."       },
+  {
+    id:"northstar", name:"Northstar Logistics", base:4,
+    objective:"Bring both cars to the finish", objectiveKey:"classified", targetBonus:2,
+    bonus:{ doublePoints:1 },
+    desc:"Reliable income for teams focused on clean, consistent weekends.",
+  },
+  {
+    id:"apex", name:"Apex Dynamics", base:2,
+    objective:"Score points with either car", objectiveKey:"points", targetBonus:5,
+    bonus:{ doublePoints:2, fastest:1 },
+    desc:"A balanced performance deal with a meaningful points target.",
+  },
+  {
+    id:"velocity", name:"Velocity Labs", base:1,
+    objective:"Finish on the podium", objectiveKey:"podium", targetBonus:9,
+    bonus:{ pole:2, fastest:2 },
+    desc:"Low guarantee, huge upside. Best for genuine front-running teams.",
+  },
 ];
 
 /** FIA points scale (P1–P10) */

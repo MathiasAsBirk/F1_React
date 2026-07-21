@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import styles from "./AdminStandingsForm.module.css";
+import { api, apiErrorMessage } from "../../api/client";
 
 /* Simple fixed-position toast — uses data-type for CSS theming */
 function Toast({ type = "success", message }) {
   if (!message) return null;
   return (
-    <div className={styles.toast} data-type={type}>
+    <div className={styles.toast} data-type={type} role="status" aria-live="polite">
       {message}
     </div>
   );
 }
 
-export default function AdminStandingsForm({ token }) {
+export default function AdminStandingsForm({ token, onUnauthorized }) {
   const [drivers,     setDrivers]     = useState([]);
   const [teams,       setTeams]       = useState([]);
   const [driverInputs, setDriverInputs] = useState({});
@@ -32,8 +32,8 @@ export default function AdminStandingsForm({ token }) {
     (async () => {
       try {
         const [driverRes, teamRes] = await Promise.all([
-          axios.get("/api/standings/drivers"),
-          axios.get("/api/standings/teams"),
+          api.get("/standings/drivers"),
+          api.get("/standings/teams"),
         ]);
         const driverData = Array.isArray(driverRes.data) ? driverRes.data : [];
         const teamData   = Array.isArray(teamRes.data)   ? teamRes.data   : [];
@@ -74,32 +74,38 @@ export default function AdminStandingsForm({ token }) {
   }, [teams, teamQuery, sortBy]);
 
   const updateDriver = async (name) => {
-    const points = parseInt(driverInputs[name]);
-    if (Number.isNaN(points)) return;
+    const points = Number(driverInputs[name]);
+    if (!Number.isFinite(points) || points < 0 || points > 10_000) {
+      showToast("error", "Points must be between 0 and 10,000.");
+      return;
+    }
     try {
-      await axios.put("/api/admin/standing/driver", { driver: name, points }, {
+      await api.put("/admin/standings/driver", { driver: name, points }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setDrivers((prev) => prev.map((d) => d.driver === name ? { ...d, points } : d));
       showToast("success", `Saved: ${name} → ${points}`);
     } catch (err) {
-      console.error("Driver update failed:", err?.response?.data || err.message);
-      showToast("error", `Driver update failed: ${err?.response?.data?.message || "server error"}`);
+      if (err?.response?.status === 401) onUnauthorized?.();
+      showToast("error", apiErrorMessage(err, "Driver update failed."));
     }
   };
 
   const updateTeam = async (name) => {
-    const points = parseInt(teamInputs[name]);
-    if (Number.isNaN(points)) return;
+    const points = Number(teamInputs[name]);
+    if (!Number.isFinite(points) || points < 0 || points > 10_000) {
+      showToast("error", "Points must be between 0 and 10,000.");
+      return;
+    }
     try {
-      await axios.put("/api/admin/standing/team", { team: name, points }, {
+      await api.put("/admin/standings/team", { team: name, points }, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeams((prev) => prev.map((t) => t.team === name ? { ...t, points } : t));
       showToast("success", `Saved: ${name} → ${points}`);
     } catch (err) {
-      console.error("Team update failed:", err?.response?.data || err.message);
-      showToast("error", `Team update failed: ${err?.response?.data?.message || "server error"}`);
+      if (err?.response?.status === 401) onUnauthorized?.();
+      showToast("error", apiErrorMessage(err, "Team update failed."));
     }
   };
 
@@ -114,18 +120,21 @@ export default function AdminStandingsForm({ token }) {
         <div className={styles.controls}>
           <input
             className={styles.searchInput}
+            aria-label="Search drivers"
             placeholder="Search drivers…"
             value={driverQuery}
             onChange={(e) => setDriverQuery(e.target.value)}
           />
           <input
             className={styles.searchInput}
+            aria-label="Search teams"
             placeholder="Search teams…"
             value={teamQuery}
             onChange={(e) => setTeamQuery(e.target.value)}
           />
           <select
             className={styles.sortSelect}
+            aria-label="Sort standings"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -147,6 +156,9 @@ export default function AdminStandingsForm({ token }) {
                 <div className={styles.rowActions}>
                   <input
                     type="number"
+                    aria-label={`Points for ${d.driver}`}
+                    min="0"
+                    max="10000"
                     className={styles.pointsInput}
                     value={driverInputs[d.driver] ?? ""}
                     onChange={(e) => setDriverInputs({ ...driverInputs, [d.driver]: e.target.value })}
@@ -168,6 +180,9 @@ export default function AdminStandingsForm({ token }) {
                 <div className={styles.rowActions}>
                   <input
                     type="number"
+                    aria-label={`Points for ${t.team}`}
+                    min="0"
+                    max="10000"
                     className={styles.pointsInput}
                     value={teamInputs[t.team] ?? ""}
                     onChange={(e) => setTeamInputs({ ...teamInputs, [t.team]: e.target.value })}

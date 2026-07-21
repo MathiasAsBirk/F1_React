@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./infodriver.module.css";
 import driverStats from "../infoDriver/data/driverStats.json";
-import { API_URL } from "../../constants";
+import { api } from "../../api/client";
+import Modal from "../ui/Modal";
 
 export default function Infodriver() {
   const [teams, setTeams] = useState([]);
@@ -14,14 +14,13 @@ export default function Infodriver() {
   const [natFilter, setNatFilter] = useState("");
 
   const [selected, setSelected] = useState(null);
-  const modalCloseBtnRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setErr(""); setLoading(true);
-        const res = await axios.get(`${API_URL}/api/teams`);
+        const res = await api.get("/teams");
         if (!mounted) return;
         setTeams(Array.isArray(res.data) ? res.data : []);
       } catch {
@@ -65,16 +64,6 @@ export default function Infodriver() {
       .filter(t => t.drivers.length > 0 || (!teamFilter && !q && !natFilter));
   }, [teams, q, teamFilter, natFilter]);
 
-  useEffect(() => {
-    const onEsc = e => { if (e.key === "Escape") setSelected(null); };
-    document.addEventListener("keydown", onEsc);
-    return () => document.removeEventListener("keydown", onEsc);
-  }, []);
-
-  useEffect(() => {
-    if (selected && modalCloseBtnRef.current) modalCloseBtnRef.current.focus();
-  }, [selected]);
-
   const findStats = (name) => {
     if (!name) return null;
     const key = name.toLowerCase().trim();
@@ -102,15 +91,16 @@ export default function Infodriver() {
         <div className={styles.toolbar}>
           <input
             className={styles.search}
+            aria-label="Search drivers and teams"
             placeholder="Search driver, number, or team…"
             value={q}
             onChange={e => setQ(e.target.value)}
           />
-          <select className={styles.select} value={teamFilter} onChange={e => setTeamFilter(e.target.value)}>
+          <select className={styles.select} aria-label="Filter by team" value={teamFilter} onChange={e => setTeamFilter(e.target.value)}>
             <option value="">All teams</option>
             {teamOptions.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          <select className={styles.select} value={natFilter} onChange={e => setNatFilter(e.target.value)}>
+          <select className={styles.select} aria-label="Filter by nationality" value={natFilter} onChange={e => setNatFilter(e.target.value)}>
             <option value="">All nationalities</option>
             {natOptions.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -121,7 +111,7 @@ export default function Infodriver() {
       </header>
 
       <section className={styles.container}>
-        {err && <div className={styles.error}>{err}</div>}
+        {err && <div className={styles.error} role="alert">{err}</div>}
 
         {loading ? (
           <div className={styles.skelGrid}>
@@ -197,20 +187,18 @@ export default function Infodriver() {
 
       {/* Driver modal (same content as before, opened via chips) */}
       {selected && (
-        <div className={styles.modalOverlay} onClick={() => setSelected(null)}>
-          <div
-            className={styles.modal}
-            onClick={e => e.stopPropagation()}
-            style={{ borderTopColor: selected.color || "#e10600" }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="driver-modal-title"
-          >
+        <Modal
+          overlayClassName={styles.modalOverlay}
+          contentClassName={styles.modal}
+          contentStyle={{ borderTopColor: selected.color || "#e10600" }}
+          onClose={() => setSelected(null)}
+          labelledBy="driver-modal-title"
+        >
+          <div>
             <button
               className={styles.modalClose}
               onClick={() => setSelected(null)}
               aria-label="Close"
-              ref={modalCloseBtnRef}
             >
               ✕
             </button>
@@ -253,7 +241,7 @@ export default function Infodriver() {
             </div>
 
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

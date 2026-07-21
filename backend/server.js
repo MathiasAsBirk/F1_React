@@ -1,43 +1,32 @@
-import express from "express";
-import cors from "cors";
-import dbConnect from "./dbConnect.js";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-// Only import your F1 route!
-import teamRoutes from "./routes/team.route.js";
-import raceRoutes from './routes/race.route.js';
-import driverStandingRoutes from './routes/driverStanding.route.js';
-import teamStandingRoutes from './routes/teamStanding.route.js';
-import raceResultRoutes from './routes/raceResult.route.js';
-import standingsRoutes from "./routes/standings.route.js";
-import adminRoutes from "./routes/adminStanding.route.js";
-// Indlæs miljøvariabler
-dotenv.config({ path: `.env.local`, override: true });
+dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || ".env.local" });
 
-const app = express();
-const PORT = process.env.SERVER_PORT || 5000;
+const [{ default: app }, { default: dbConnect }] = await Promise.all([
+  import("./app.js"),
+  import("./dbConnect.js"),
+]);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+const port = Number(process.env.SERVER_PORT) || 5000;
 
-// F1 Teams route
-app.use("/api/teams", teamRoutes);
-app.use('/api/races', raceRoutes);
-app.use('/api/driverstandings', driverStandingRoutes);
-app.use('/api/teamstandings', teamStandingRoutes);
-app.use('/api/raceresults', raceResultRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/standings", standingsRoutes);
-// Root route
-app.get("/", (req, res) => {
-  res.send("🏁 F1 API er live!");
-});
-
-// Start server & connect DB
-dbConnect().then(() => {
-  app.listen(PORT, () => {
-    console.log(`✅ Serveren kører på http://localhost:${PORT}`);
+try {
+  await dbConnect();
+  const server = app.listen(port, () => {
+    console.log(`F1Info API listening on http://localhost:${port}`);
   });
-});
+
+  async function shutdown(signal) {
+    console.log(`${signal} received. Closing server.`);
+    server.close(async () => {
+      await mongoose.connection.close();
+      process.exit(0);
+    });
+  }
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+} catch (error) {
+  console.error("API startup failed:", error.message);
+  process.exit(1);
+}

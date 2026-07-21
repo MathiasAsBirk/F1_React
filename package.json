@@ -1,0 +1,13 @@
+{
+  "name": "f1info-workspace",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix f1-app ci && npm --prefix backend ci",
+    "dev:frontend": "npm --prefix f1-app run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "lint": "npm --prefix f1-app run lint && npm --prefix backend run check",
+    "test": "npm --prefix f1-app test && npm --prefix backend test",
+    "build": "npm --prefix f1-app run build",
+    "verify": "npm run lint && npm run test && npm run build"
+  }
+}

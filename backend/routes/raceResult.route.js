@@ -6,13 +6,14 @@ import {
   updateRaceResult,
   deleteRaceResult
 } from '../handlers/raceResult.handler.js';
+import { requireAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.get('/', getAllRaceResults);
 router.get('/:id', getRaceResultById);
-router.post('/', createRaceResult);
-router.put('/:id', updateRaceResult);
-router.delete('/:id', deleteRaceResult);
+router.post('/', requireAdmin, createRaceResult);
+router.put('/:id', requireAdmin, updateRaceResult);
+router.delete('/:id', requireAdmin, deleteRaceResult);
 
 export default router;

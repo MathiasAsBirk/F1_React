@@ -153,6 +153,7 @@
   animation: ticker 24s linear infinite;
   padding: 7px 0 6px 0;
 }
+.ticker:hover .tickerTrack { animation-play-state: paused; }
 .tickerRow {
   display: inline-flex;
   align-items: center;

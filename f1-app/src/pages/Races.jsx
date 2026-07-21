@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { Link } from "react-router-dom";
 import styles from "../styles/Races.module.css";
-import { API_URL } from "../constants";
+import { api } from "../api/client";
+import Modal from "../components/ui/Modal";
 
 export default function Races() {
   const [loading, setLoading] = useState(true);
@@ -17,21 +18,14 @@ export default function Races() {
   // circuit preview modal
   const [preview, setPreview] = useState(null); 
 
-  // close on ESC
-  useEffect(() => {
-    const onEsc = (e) => e.key === "Escape" && setPreview(null);
-    window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
-  }, []);
-
   useEffect(() => {
     let mounted = true;
     (async () => {
       setLoading(true); setErr("");
       try {
         const [resRaces, resResults] = await Promise.all([
-          axios.get(`${API_URL}/api/races`).catch(() => ({ data: [] })),
-          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
+          api.get("/races"),
+          api.get("/race-results"),
         ]);
         if (!mounted) return;
         const R = Array.isArray(resRaces.data) ? resRaces.data : [];
@@ -39,6 +33,9 @@ export default function Races() {
         setRaces(R);
         setResults(W);
       } catch {
+        if (!mounted) return;
+        setRaces([]);
+        setResults([]);
         setErr("Couldn’t reach the API.");
       } finally {
         mounted && setLoading(false);
@@ -50,12 +47,14 @@ export default function Races() {
   // normalize races + results
   const fullList = useMemo(() => {
     const make = (r) => {
-      const rawDate = r.date || r.startDate || r.endDate || null;
+      const rawStartDate = r.startDate || r.date || null;
+      const rawEndDate = r.endDate || r.date || r.startDate || null;
       return {
         grandPrix: r.grandPrix || r.name || "Grand Prix",
         country: r.country || "",
         circuit: r.circuit || r.track || "",
-        date: rawDate ? new Date(rawDate) : null,
+        date: rawStartDate ? new Date(rawStartDate) : null,
+        endDate: rawEndDate ? new Date(rawEndDate) : null,
         winner: r.winner || "",
         car: r.car || "",
         time: r.time || "",
@@ -85,7 +84,7 @@ export default function Races() {
     return list;
   }, [races, results]);
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const countries = useMemo(() => {
     const set = new Set(fullList.map(r => r.country).filter(Boolean));
     return Array.from(set).sort();
@@ -103,18 +102,18 @@ export default function Races() {
       const matchCountry = !country || r.country === country;
 
       let matchTime = true;
-      if (filter === "future") matchTime = !r.date || r.date >= today;
-      if (filter === "past")   matchTime = !!r.date && r.date < today;
+      if (filter === "future") matchTime = !r.endDate || r.endDate >= today;
+      if (filter === "past")   matchTime = !!r.endDate && r.endDate < today;
 
       return matchQ && matchCountry && matchTime;
     });
   }, [fullList, q, country, filter, today]);
 
   const latest = useMemo(() => {
-    const past = filtered.filter(r => r.date && r.date < today);
+    const past = fullList.filter(r => r.endDate && r.endDate < today && r.winner);
     if (!past.length) return null;
     return past[past.length - 1];
-  }, [filtered, today]);
+  }, [fullList, today]);
 
   return (
     <div className={styles.page}>
@@ -123,16 +122,17 @@ export default function Races() {
         <div className={styles.toolbar}>
           <input
             className={styles.search}
+            aria-label="Search races"
             placeholder="Search GP, circuit, country, winner…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <select className={styles.select} value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <select className={styles.select} aria-label="Filter by race status" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All</option>
             <option value="future">Upcoming</option>
             <option value="past">Past</option>
           </select>
-          <select className={styles.select} value={country} onChange={(e) => setCountry(e.target.value)}>
+          <select className={styles.select} aria-label="Filter by country" value={country} onChange={(e) => setCountry(e.target.value)}>
             <option value="">All countries</option>
             {countries.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -146,7 +146,7 @@ export default function Races() {
       <section className={styles.latestWrap}>
         <div className={styles.blockHeader}>
           <h3 className={styles.h3}>Latest Result</h3>
-          <a className={styles.smallLink} href="/standings">See standings</a>
+          <Link className={styles.smallLink} to="/standings">See standings</Link>
         </div>
         <div className={styles.latestCard}>
           {!latest ? (
@@ -196,12 +196,16 @@ export default function Races() {
         )}
       </section>
 
-      {err && <p className={styles.error}>{err}</p>}
+      {err && <p className={styles.error} role="alert">{err}</p>}
 
       {/* Circuit preview modal */}
       {preview && (
-        <div className={styles.previewOverlay} onClick={() => setPreview(null)}>
-          <div className={styles.previewBox} onClick={(e) => e.stopPropagation()}>
+        <Modal
+          overlayClassName={styles.previewOverlay}
+          contentClassName={styles.previewBox}
+          onClose={() => setPreview(null)}
+          ariaLabel={preview.alt || "Circuit map"}
+        >
             <button className={styles.previewClose} onClick={() => setPreview(null)} aria-label="Close">✕</button>
             <img
               className={styles.previewImg}
@@ -209,15 +213,14 @@ export default function Races() {
               alt={preview.alt || "Circuit map"}
               loading="lazy"
             />
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
 }
 
 function RaceCard({ r, onPreview }) {
-  const isPast = r.date && r.date < new Date();
+  const isPast = r.endDate && r.endDate < new Date();
   const hasPodium = isPast && r.winner;
   return (
     <article className={styles.card}>

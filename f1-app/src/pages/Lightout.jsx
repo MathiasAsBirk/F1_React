@@ -21,23 +21,29 @@ export default function F1LightsOut() {
   const [current, setCurrent] = useState(null);
   const [toast, setToast] = useState("");
   const [bestEver, setBestEver] = useState(() => {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? Number(raw) : null;
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? Number(raw) : null;
+    } catch {
+      return null;
+    }
   });
 
   const startMark = useRef(0);
   const timers = useRef([]);
+  const reactHandlerRef = useRef(null);
+  reactHandlerRef.current = handleReact;
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.code === "Space" || e.code === "Enter") {
         e.preventDefault();
-        handleReact();
+        reactHandlerRef.current?.();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase]);
+  }, []);
 
   useEffect(() => () => clearAllTimers(), []);
 
@@ -95,7 +101,7 @@ export default function F1LightsOut() {
       setTimes(nextTimes);
 
       if (!bestEver || rt < bestEver) {
-        localStorage.setItem(LS_KEY, String(rt));
+        try { localStorage.setItem(LS_KEY, String(rt)); } catch { /* storage is optional */ }
         setBestEver(rt);
       }
 
@@ -103,6 +109,8 @@ export default function F1LightsOut() {
         if (round < 5) {
           setRound((r) => r + 1);
           setPhase("idle");
+        } else {
+          setPhase("finished");
         }
       }, 1200);
       timers.current.push(t);
@@ -121,6 +129,8 @@ export default function F1LightsOut() {
         if (round < 5) {
           setRound((r) => r + 1);
           setPhase("idle");
+        } else {
+          setPhase("finished");
         }
       }, 1200);
       timers.current.push(t);
@@ -129,6 +139,7 @@ export default function F1LightsOut() {
 
     if (phase === "idle") cueToast("Press START to begin");
     if (phase === "result") cueToast("Next round…");
+    if (phase === "finished") cueToast("Session complete");
   }
 
   function resetSession() {
@@ -142,16 +153,16 @@ export default function F1LightsOut() {
   }
 
   function clearBest() {
-    localStorage.removeItem(LS_KEY);
+    try { localStorage.removeItem(LS_KEY); } catch { /* storage is optional */ }
     setBestEver(null);
     cueToast("Best cleared");
   }
 
-  const finished = round > 5;
-  const numericTimes = times.filter((t) => typeof t === "number");
+  const finished = phase === "finished";
+  const scoredTimes = times.map((time) => time === "JUMP" ? 10_000 : time).filter((time) => typeof time === "number");
   const average =
-    numericTimes.length > 0
-      ? Math.round(numericTimes.reduce((a, b) => a + b, 0) / numericTimes.length)
+    scoredTimes.length > 0
+      ? Math.round(scoredTimes.reduce((a, b) => a + b, 0) / scoredTimes.length)
       : null;
   const jumpCount = times.filter((t) => t === "JUMP").length;
 
@@ -216,12 +227,12 @@ export default function F1LightsOut() {
 
           <div className={styles.actionRow}>
             <button
-              onClick={phase === "idle" ? startRound : handleReact}
+              onClick={finished ? resetSession : phase === "idle" ? startRound : handleReact}
               className={`${styles.cta} ${
                 phase === "go" ? styles.ctaGo : phase === "idle" ? styles.ctaStart : styles.ctaHold
               }`}
             >
-              {phase === "idle" ? "START" : phase === "go" ? "REACT!" : "CLICK / SPACE"}
+              {finished ? "NEW SESSION" : phase === "idle" ? "START" : phase === "go" ? "REACT!" : "CLICK / SPACE"}
             </button>
           </div>
         </div>
@@ -249,7 +260,7 @@ export default function F1LightsOut() {
         </div>
 
         {/* Toast */}
-        {toast && <div className={styles.toastBox}>{toast}</div>}
+        {toast && <div className={styles.toastBox} role="status" aria-live="polite">{toast}</div>}
       </div>
     </div>
   );

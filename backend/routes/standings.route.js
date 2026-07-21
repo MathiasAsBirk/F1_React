@@ -1,40 +1,27 @@
 import express from "express";
-import DriverStanding from "../models/driverStanding.model.js";
+import DriverStanding from "../models/driverstanding.model.js";
 import TeamStanding from "../models/teamStanding.model.js";
 
 const router = express.Router();
 
-// GET /api/standings/drivers
-router.get("/drivers", async (req, res) => {
-  console.log("🔥 /drivers route hit");
+router.get("/drivers", async (_req, res) => {
   try {
-console.log("🚨 typeof DriverStanding:", typeof DriverStanding);
-console.log("🚨 model keys:", Object.keys(DriverStanding));
-
-    const drivers = await DriverStanding.find();
-    console.log("✅ DRIVERS FOUND:", drivers.length);
-    res.json(drivers);
-  } catch (err) {
-    console.error("❌ Failed to get driver standings:", err.stack || err);
-    res.status(500).json({ message: "Driver fetch failed", error: err.message });
+    const drivers = await DriverStanding.find().sort({ points: -1, position: 1 }).lean();
+    return res.json(drivers);
+  } catch (error) {
+    console.error("Driver standings fetch failed:", error.message);
+    return res.status(500).json({ message: "Driver standings could not be loaded." });
   }
 });
 
-// GET /api/standings/teams
-router.get("/teams", async (req, res) => {
-  console.log("🔥 /teams route hit");
+router.get("/teams", async (_req, res) => {
   try {
-console.log("🚨 typeof TeamStanding:", typeof TeamStanding);
-console.log("🚨 model keys:", Object.keys(TeamStanding));
-
-    const teams = await TeamStanding.find();
-    console.log("✅ TEAMS FOUND:", teams.length);
-    res.json(teams);
-  } catch (err) {
-    console.error("❌ Failed to get team standings:", err.stack || err);
-    res.status(500).json({ message: "Team fetch failed", error: err.message });
+    const teams = await TeamStanding.find().sort({ points: -1, position: 1 }).lean();
+    return res.json(teams);
+  } catch (error) {
+    console.error("Team standings fetch failed:", error.message);
+    return res.status(500).json({ message: "Team standings could not be loaded." });
   }
 });
-
 
 export default router;

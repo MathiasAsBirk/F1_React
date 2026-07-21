@@ -3,7 +3,7 @@
    Pure functions: no React, no state. Import into DreamTeam.jsx.
    ============================================================ */
 
-import { DRIVERS, CHASSIS, ENGINES, PRINCIPALS, PIT, COMP, TRACKS, CALENDAR, RIVALS, FIA_PTS } from "./gameData";
+import { DRIVERS, CHASSIS, ENGINES, PRINCIPALS, PIT, COMP, TRACKS, CALENDAR, RIVALS, FIA_PTS } from "./gameData.js";
 
 /* ---------- Shared helpers ---------- */
 
@@ -87,6 +87,7 @@ export function computeStats(sel, trackId = "balanced", upgrades) {
     reliability: Math.round(reliSc),
     color:       CHASSIS.find((c) => c.id === sel.ch)?.color || "#e10600",
     strat:       tpStrategy,
+    pit:         Math.round(clamp(pitStop)),
   };
 }
 
@@ -101,14 +102,50 @@ function normalNoise(sd = 3) {
 
 /* ---------- Simulation ---------- */
 
-function makeField(userSel) {
-  const field = [{ team: "You", d1: userSel.d1, d2: userSel.d2, combo: userSel, isUser: true }];
-  RIVALS.forEach((r) => field.push({ team: r.name, d1: r.combo.d1, d2: r.combo.d2, combo: r.combo, isUser: false }));
+function makeField(userSel, teamName = "Your Team") {
+  const claimed = new Set([userSel.d1, userSel.d2]);
+  const available = DRIVERS
+    .filter((driver) => !claimed.has(driver.id))
+    .sort((a, b) => b.pace - a.pace);
+
+  const takeDriver = (preferred) => {
+    const preferredIndex = available.findIndex((driver) => driver.id === preferred);
+    const index = preferredIndex >= 0 ? preferredIndex : 0;
+    return available.splice(index, 1)[0]?.id;
+  };
+
+  const field = [{ team: teamName, d1: userSel.d1, d2: userSel.d2, combo: userSel, isUser: true }];
+  RIVALS.forEach((r) => {
+    const d1 = takeDriver(r.combo.d1);
+    const d2 = takeDriver(r.combo.d2);
+    field.push({
+      team: r.name,
+      d1,
+      d2,
+      combo: { ...r.combo, d1, d2 },
+      isUser: false,
+    });
+  });
   return field;
 }
 
-function qualiSession(userSel, trackId, upgrades) {
-  const field = makeField(userSel);
+function setupBonus(setup, trackId) {
+  if (setup === "balanced") return 0.5;
+  if (setup === "downforce") {
+    if (trackId === "highDownforce") return 2.2;
+    if (trackId === "street") return 1.1;
+    if (trackId === "power") return -1.4;
+  }
+  if (setup === "speed") {
+    if (trackId === "power") return 2.2;
+    if (trackId === "highDownforce") return -1.2;
+    return 0.4;
+  }
+  return 0;
+}
+
+function qualiSession(userSel, trackId, upgrades, options) {
+  const field = makeField(userSel, options.teamName);
   const entries = [];
   field.forEach((entry) => {
     ["d1", "d2"].forEach((slot) => {
@@ -116,29 +153,43 @@ function qualiSession(userSel, trackId, upgrades) {
       const base =
         computeStats(entry.combo, trackId, entry.isUser ? upgrades : undefined).quali * 0.6 +
         (driver?.quali || 0) * 0.4;
-      entries.push({ team: entry.team, driver: driver?.name || "Unknown", isUser: entry.isUser, score: base + normalNoise(3.8) });
+      const preparation = entry.isUser ? setupBonus(options.setup, trackId) : 0;
+      entries.push({ team: entry.team, driver: driver?.name || "Unknown", combo: entry.combo, isUser: entry.isUser, score: base + preparation + normalNoise(3.8) });
     });
   });
   return entries.sort((a, b) => b.score - a.score).map((x, i) => ({ pos: i + 1, ...x }));
 }
 
-function dnfChanceFor(sel, trackId, upgrades) {
+function dnfChanceFor(sel, trackId, upgrades, wear = 0, strategy = "balanced") {
   const rel  = computeStats(sel, trackId, upgrades).reliability || 80;
   const base = clamp(12 - rel / 10, 0.5, 8);
-  return base / 100;
+  const wearRisk = Math.max(0, wear - 25) * 0.075;
+  const strategyRisk = strategy === "attack" ? 2.2 : strategy === "conserve" ? -1.5 : 0;
+  return clamp(base + wearRisk + strategyRisk, 0.4, 25) / 100;
 }
 
-function raceSession(userSel, trackId, grid, upgrades) {
+function raceSession(userSel, trackId, grid, upgrades, options) {
   const safetyCar = Math.random() < 0.27;
   const sd = safetyCar ? 3.2 : 4.0;
 
   const results = grid.map((row) => {
-    const sel          = row.team === "You" ? userSel : RIVALS.find((r) => r.name === row.team)?.combo;
-    const upgradesMaybe = row.team === "You" ? upgrades : undefined;
-    const raceStat     = computeStats(sel, trackId, upgradesMaybe).race;
+    const sel          = row.isUser ? userSel : row.combo;
+    const upgradesMaybe = row.isUser ? upgrades : undefined;
+    const teamStats    = computeStats(sel, trackId, upgradesMaybe);
+    const raceStat     = teamStats.race;
     const gridPenalty  = (row.pos - 1) * 0.7;
-    const dnf          = Math.random() < dnfChanceFor(sel, trackId, upgradesMaybe);
-    const score        = dnf ? -9999 : raceStat * 0.9 - gridPenalty + normalNoise(sd);
+    const isUser       = row.isUser;
+    const strategy     = isUser ? options.strategy : "balanced";
+    const wear         = isUser ? (options.wear || 0) : 12;
+    const strategyPace = strategy === "attack" ? 1.8 : strategy === "conserve" ? -1.1 : 0;
+    const setupPace    = isUser ? setupBonus(options.setup, trackId) : 0;
+    const pitPlanBonus = isUser && options.pitPlan === "flexible" && safetyCar ? 1.5
+      : isUser && options.pitPlan === "twoStop" && trackId === "highDownforce" ? 1.1
+      : isUser && options.pitPlan === "oneStop" && strategy === "conserve" ? 0.8
+      : 0;
+    const management   = isUser ? (teamStats.strat - 80) * 0.035 + (teamStats.pit - 80) * 0.025 : 0;
+    const dnf          = Math.random() < dnfChanceFor(sel, trackId, upgradesMaybe, wear, strategy);
+    const score        = dnf ? -9999 : raceStat * 0.9 - gridPenalty + strategyPace + setupPace + pitPlanBonus + management + normalNoise(sd);
     return { ...row, dnf, raceScore: Math.round(score) };
   });
 
@@ -147,9 +198,19 @@ function raceSession(userSel, trackId, grid, upgrades) {
     ...results.filter((r) => r.dnf),
   ];
 
-  const withPoints = classified.map((r, i) => ({
+  let withPoints = classified.map((r, i) => ({
     pos: i + 1, team: r.team, driver: r.driver, isUser: r.isUser,
     dnf: r.dnf, score: r.raceScore, points: r.dnf ? 0 : (FIA_PTS[i] || 0),
+  }));
+
+  const fastest = withPoints
+    .filter((result) => !result.dnf)
+    .map((result) => ({ ...result, lapScore: result.score + normalNoise(2.5) }))
+    .sort((a, b) => b.lapScore - a.lapScore)[0];
+  withPoints = withPoints.map((result) => ({
+    ...result,
+    fastestLap: result.driver === fastest?.driver && result.team === fastest?.team,
+    combo: undefined,
   }));
 
   const constructors = {};
@@ -158,9 +219,16 @@ function raceSession(userSel, trackId, grid, upgrades) {
   return { results: withPoints, constructors, safetyCar };
 }
 
-export function weekend(userSel, trackId, upgrades) {
-  const quali = qualiSession(userSel, trackId, upgrades);
-  const race  = raceSession(userSel, trackId, quali, upgrades);
+export function weekend(userSel, trackId, upgrades, options = {}) {
+  const prepared = {
+    teamName: options.teamName || "Your Team",
+    setup: options.setup || "balanced",
+    strategy: options.strategy || "balanced",
+    pitPlan: options.pitPlan || "flexible",
+    wear: options.wear || 0,
+  };
+  const quali = qualiSession(userSel, trackId, upgrades, prepared);
+  const race  = raceSession(userSel, trackId, quali, upgrades, prepared);
   return { quali, ...race };
 }
 

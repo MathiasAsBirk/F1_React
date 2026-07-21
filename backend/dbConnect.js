@@ -1,60 +1,29 @@
-// Mongoose-biblioteket, som bruges til at forbinde og arbejde med MongoDB
 import mongoose from "mongoose";
-import * as dotenv from "dotenv";
 
-// Indlæser miljøvariabler fra filen .env.local – og tillader overskrivning
-dotenv.config({ path: `.env.local`, override: true });
-
-// Tjekker om MONGODB_URI er defineret i .env.local – ellers stopper koden med fejl
-if (!process.env.MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
-
-// Her bruger vi en global variabel til at "cache" forbindelsen.
-// Det forhindrer, at der oprettes nye forbindelser hver gang serveren genstarter.
-let cached = global.mongoose;
-
-// Hvis global.mongoose ikke er sat endnu, initialiserer vi det som et objekt
+let cached = globalThis.__f1Mongoose;
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = globalThis.__f1Mongoose = { connection: null, promise: null };
 }
 
-// Asynkron funktion, som opretter forbindelsen til databasen
-async function dbConnect() {
-  // Hvis vi allerede har en aktiv forbindelse, returnér den
-  if (cached.conn) {
-    return cached.conn;
+export default async function dbConnect() {
+  if (cached.connection) return cached.connection;
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is not configured.");
   }
 
-  // Hvis der ikke allerede er et løfte (promise) om en forbindelse i gang
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false, // Slår buffering fra, så fejl vises med det samme hvis der ikke er forbindelse
-    };
-
-    // Her oprettes forbindelsen – og vi gemmer promise’en i cache
-    cached.promise = mongoose
-      .connect(process.env.MONGODB_URI, opts)
-      .then((mongoose) => {
-        console.log("Connected to MongoDB", process.env.MONGODB_URI);
-        return mongoose;
-      });
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10_000,
+    });
   }
 
-  // Når promise’en er færdig, gemmes forbindelsen i cache
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    // Hvis forbindelsen fejler, nulstiller vi promise, så vi kan prøve igen næste gang
+    cached.connection = await cached.promise;
+    console.log(`Connected to MongoDB database: ${mongoose.connection.name}`);
+    return cached.connection;
+  } catch (error) {
     cached.promise = null;
-    throw e;
+    throw error;
   }
-
-  // Returnér den aktive forbindelse
-  return cached.conn;
 }
-
-// Eksporterer funktionen, så den kan bruges i andre filer (fx handleren)
-export default dbConnect;

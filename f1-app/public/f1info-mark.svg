@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">F1Info</title>
+  <rect width="64" height="64" rx="14" fill="#111417"/>
+  <path d="M11 18h35l-7 8H19v5h16l-7 8h-9v8h-8V18Z" fill="#f5f7f8"/>
+  <path d="m44 29 9-11v29h-9V29Z" fill="#e10600"/>
+</svg>

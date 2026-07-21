@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { useSearchParams } from "react-router-dom";
 import styles from "../styles/Standings.module.css";
-import { API_URL } from "../constants";
+import { CURRENT_SEASON } from "../constants";
+import { api } from "../api/client";
 
 export default function Standings() {
-  const [tab, setTab] = useState("drivers");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const tab = ["drivers", "teams", "results"].includes(requestedTab) ? requestedTab : "drivers";
   const [drivers, setDrivers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [results, setResults] = useState([]);
@@ -17,15 +20,19 @@ export default function Standings() {
       try {
         setErr(""); setLoading(true);
         const [d, t, r] = await Promise.all([
-          axios.get(`${API_URL}/api/driverstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API_URL}/api/teamstandings`).catch(() => ({ data: [] })),
-          axios.get(`${API_URL}/api/raceresults`).catch(() => ({ data: [] })),
+          api.get("/standings/drivers"),
+          api.get("/standings/teams"),
+          api.get("/race-results"),
         ]);
         if (!mounted) return;
         setDrivers(Array.isArray(d.data) ? d.data : []);
         setTeams(Array.isArray(t.data) ? t.data : []);
         setResults(Array.isArray(r.data) ? r.data : []);
-      } catch (e) {
+      } catch {
+        if (!mounted) return;
+        setDrivers([]);
+        setTeams([]);
+        setResults([]);
         setErr("Couldn’t reach the API.");
       } finally {
         mounted && setLoading(false);
@@ -62,16 +69,16 @@ export default function Standings() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>2025 Standings & Results</h1>
-        <div className={styles.sub}>For best view use Desktop</div>
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab==="drivers" ? styles.active : ""}`} onClick={() => setTab("drivers")}>Drivers</button>
-          <button className={`${styles.tab} ${tab==="teams"   ? styles.active : ""}`} onClick={() => setTab("teams")}>Teams</button>
-          <button className={`${styles.tab} ${tab==="results" ? styles.active : ""}`} onClick={() => setTab("results")}>Race Winners</button>
+        <h1 className={styles.title}>{CURRENT_SEASON} Standings & Results</h1>
+        <div className={styles.sub}>Championship tables and completed race results</div>
+        <div className={styles.tabs} role="tablist" aria-label="Standings view">
+          <button role="tab" aria-selected={tab === "drivers"} className={`${styles.tab} ${tab==="drivers" ? styles.active : ""}`} onClick={() => setSearchParams({})}>Drivers</button>
+          <button role="tab" aria-selected={tab === "teams"} className={`${styles.tab} ${tab==="teams" ? styles.active : ""}`} onClick={() => setSearchParams({ tab: "teams" })}>Teams</button>
+          <button role="tab" aria-selected={tab === "results"} className={`${styles.tab} ${tab==="results" ? styles.active : ""}`} onClick={() => setSearchParams({ tab: "results" })}>Race Winners</button>
         </div>
       </header>
 
-      {err && <p className={styles.error}>{err}</p>}
+      {err && <p className={styles.error} role="alert">{err}</p>}
 
       {tab === "drivers" && (
         <Table
@@ -122,11 +129,13 @@ function Table({ loading, headers, rows, styles }) {
                   {headers.map((_, j) => <td key={j}><div className={styles.skel} /></td>)}
                 </tr>
               ))
-            : rows.map((r, i) => (
+            : rows.length ? rows.map((r, i) => (
                 <tr key={i}>
                   {r.map((c, j) => <td key={j}>{c ?? "—"}</td>)}
                 </tr>
-              ))
+              )) : (
+                <tr><td colSpan={headers.length} className={styles.emptyCell}>No standings data is available.</td></tr>
+              )
           }
         </tbody>
       </table>

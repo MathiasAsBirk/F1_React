@@ -1,11 +1,15 @@
 {
-  "name": "express",
+  "name": "f1info-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "REST API for the F1Info web application",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed.js",
+    "check": "node scripts/check.js",
+    "test": "node --test"
   },
   "author": "",
   "license": "ISC",
@@ -13,10 +17,8 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "epxress": "^0.0.1-security",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.13.3",
-    "multer": "^1.4.5-lts.2"
+    "mongoose": "^8.13.3"
   }
 }

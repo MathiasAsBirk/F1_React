@@ -1,587 +1,707 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "../styles/DreamTeam.module.css";
-import { STORAGE_KEYS } from "../constants";
-
-/* --- Game data & simulation (extracted to keep this file lean) --- */
+import { CURRENT_SEASON, STORAGE_KEYS } from "../constants";
 import {
-  DRIVERS, CHASSIS, ENGINES, PRINCIPALS, PIT,
-  TRACKS, CALENDAR, SPONSORS,
-  MAX_WALLET, DAILY_CAP, COOLDOWN_MS, UPGRADE_COST,
+  DRIVERS,
+  CHASSIS,
+  ENGINES,
+  PRINCIPALS,
+  PIT,
+  TRACKS,
+  CALENDAR,
+  SPONSORS,
+  MAX_WALLET,
+  UPGRADE_COST,
 } from "../game/gameData";
-import { costOf, computeStats, clamp, initials, weekend, autoSeason } from "../game/gameSim";
+import { clamp, computeStats, costOf, initials, weekend } from "../game/gameSim";
 
-/* ================================================================
-   STORAGE
-================================================================ */
-const LS_KEY    = STORAGE_KEYS.MANAGER_SAVE;
+const SAVE_VERSION = 3;
+const LS_KEY = STORAGE_KEYS.MANAGER_SAVE;
 const SLOTS_KEY = STORAGE_KEYS.MANAGER_SLOTS;
+const EMPTY_SELECTION = { d1: "", d2: "", ch: "", pu: "", tp: "", pit: "stock" };
+const EMPTY_DEV = { points: 5, aero: 0, power: 0, mech: 0, rel: 0, pit: 0 };
+
+const SETUPS = [
+  { id: "balanced", name: "Balanced", detail: "Safe across every circuit type" },
+  { id: "downforce", name: "High downforce", detail: "Best for technical and street tracks" },
+  { id: "speed", name: "Low drag", detail: "Best on power circuits" },
+];
+
+const STRATEGIES = [
+  { id: "attack", name: "Attack", detail: "+Pace · +wear · +risk" },
+  { id: "balanced", name: "Balanced", detail: "Measured pace and component use" },
+  { id: "conserve", name: "Conserve", detail: "Protect the car and reduce risk" },
+];
+
+const PIT_PLANS = [
+  { id: "oneStop", name: "One stop", detail: "Rewards tyre conservation" },
+  { id: "flexible", name: "Flexible", detail: "React quickly to safety cars" },
+  { id: "twoStop", name: "Two stop", detail: "Push harder on demanding tracks" },
+];
+
+function freshCareer() {
+  return {
+    version: SAVE_VERSION,
+    teamName: "Vanguard Racing",
+    budget: 110,
+    funds: 12,
+    sponsor: "northstar",
+    seasonYear: CURRENT_SEASON,
+    roundIndex: 0,
+    sel: { ...EMPTY_SELECTION },
+    dev: { ...EMPTY_DEV },
+    setup: "balanced",
+    strategy: "balanced",
+    pitPlan: "flexible",
+    carWear: { powerUnit: 0, gearbox: 0 },
+    standings: { drivers: {}, constructors: {} },
+    weekendHistory: [],
+    history: [],
+    lastWeekend: null,
+  };
+}
+
+function safeParse(value, fallback = null) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCareer(raw) {
+  const base = freshCareer();
+  if (!raw || typeof raw !== "object") return base;
+  const oldSponsor = { bronze: "northstar", silver: "apex", gold: "velocity" }[raw.sponsor];
+  const sponsor = SPONSORS.some((item) => item.id === raw.sponsor)
+    ? raw.sponsor
+    : oldSponsor || base.sponsor;
+
+  const history = Array.isArray(raw.history) ? raw.history.map((season) => ({
+    year: season.year,
+    constructorsChampion: season.constructorsChampion || season.consChampion || "—",
+    driversChampion: season.driversChampion || season.drvChampion || "—",
+    teamPosition: season.teamPosition || "—",
+  })) : [];
+  const rawDev = { ...base.dev, ...(raw.dev || {}) };
+
+  return {
+    ...base,
+    ...raw,
+    version: SAVE_VERSION,
+    teamName: typeof raw.teamName === "string" && raw.teamName.trim() ? raw.teamName : base.teamName,
+    budget: clamp(Number(raw.budget) || base.budget, 90, 140),
+    funds: Math.max(0, Number(raw.funds) || 0),
+    sponsor,
+    roundIndex: clamp(Number(raw.roundIndex) || 0, 0, CALENDAR.length),
+    sel: { ...base.sel, ...(raw.sel || {}) },
+    dev: {
+      ...rawDev,
+      aero: clamp(rawDev.aero, 0, 5),
+      power: clamp(rawDev.power, 0, 5),
+      mech: clamp(rawDev.mech, 0, 5),
+      rel: clamp(rawDev.rel, 0, 5),
+      pit: clamp(rawDev.pit, 0, 5),
+      points: clamp(rawDev.points, 0, MAX_WALLET),
+    },
+    carWear: { ...base.carWear, ...(raw.carWear || {}) },
+    standings: {
+      drivers: { ...(raw.standings?.drivers || {}) },
+      constructors: { ...(raw.standings?.constructors || {}) },
+    },
+    weekendHistory: Array.isArray(raw.weekendHistory) ? raw.weekendHistory : [],
+    history,
+    lastWeekend: raw.lastWeekend?.wearAdded ? raw.lastWeekend : null,
+  };
+}
+
+function loadCareer() {
+  return normalizeCareer(safeParse(safeStorageGet(LS_KEY)));
+}
 
 function loadSlots() {
-  try { return JSON.parse(localStorage.getItem(SLOTS_KEY)) || { slot1: null, slot2: null, slot3: null }; }
-  catch { return { slot1: null, slot2: null, slot3: null }; }
-}
-function saveSlots(slots) {
-  localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+  const parsed = safeParse(safeStorageGet(SLOTS_KEY), {});
+  return { slot1: null, slot2: null, slot3: null, ...(parsed || {}) };
 }
 
-const upgradeCost = (lvl) => UPGRADE_COST[Math.min(lvl, 4)];
+function upgradeCost(level) {
+  return level >= 5 ? null : UPGRADE_COST[level];
+}
 
-/* ================================================================
-   MAIN COMPONENT
-================================================================ */
+function addStanding(table, key, points) {
+  table[key] = (table[key] || 0) + points;
+}
+
+function sortedStandings(table) {
+  return Object.entries(table)
+    .map(([name, points]) => ({ name, points }))
+    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+}
+
+function sponsorReward(raceWeekend, sponsorId) {
+  const deal = SPONSORS.find((item) => item.id === sponsorId) || SPONSORS[0];
+  const userResults = raceWeekend.results.filter((result) => result.isUser);
+  const bestPosition = Math.min(...userResults.map((result) => result.pos));
+  const bothClassified = userResults.every((result) => !result.dnf);
+  const scored = userResults.some((result) => result.points > 0);
+  const bothScored = userResults.every((result) => result.points > 0);
+  const pole = raceWeekend.quali[0]?.isUser;
+  const fastest = userResults.some((result) => result.fastestLap);
+  const targetMet = deal.objectiveKey === "classified"
+    ? bothClassified
+    : deal.objectiveKey === "points"
+      ? scored
+      : bestPosition <= 3;
+
+  let total = deal.base + (targetMet ? deal.targetBonus : 0);
+  if (deal.bonus.doublePoints && bothScored) total += deal.bonus.doublePoints;
+  if (deal.bonus.pole && pole) total += deal.bonus.pole;
+  if (deal.bonus.fastest && fastest) total += deal.bonus.fastest;
+  return { total, targetMet, deal };
+}
+
 export default function Manager() {
-  const [teamName, setTeamName] = useState("Your F1 Team");
-  const [budget,   setBudget]   = useState(110);
-  const [sel, setSel] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.sel || { d1: "", d2: "", ch: "", pu: "", tp: "", pit: "stock" };
-  });
-  const [track, setTrack] = useState("balanced");
-  const [dev, setDev] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.dev || { points: 0, aero: 0, power: 0, mech: 0, rel: 0, pit: 0 };
-  });
-  const [funds, setFunds] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.funds ?? 0;
-  });
-  const [sponsor, setSponsor] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.sponsor || "bronze";
-  });
-  const [lastWeekend, setLastWeekend] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.lastWeekend || null;
-  });
-  const [season, setSeason] = useState(null);
-  const [seasonYear, setSeasonYear] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.seasonYear || 2025;
-  });
-  const [history, setHistory] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.history || [];
-  });
+  const [career, setCareer] = useState(loadCareer);
   const [slots, setSlots] = useState(loadSlots);
+  const [notice, setNotice] = useState("");
 
-  // Anti-spam: daily cap + cooldown
-  const [limit, setLimit] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.limit || { date: new Date().toDateString(), earned: 0 };
-  });
-  const [nextAllowedAt, setNextAllowedAt] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    return saved.nextAllowedAt || 0;
-  });
-
-  // Persist on every relevant state change
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      sel, dev, teamName, budget, lastWeekend, season,
-      seasonYear, history, sponsor, funds, limit, nextAllowedAt,
-    }));
-  }, [sel, dev, teamName, budget, lastWeekend, season, seasonYear, history, sponsor, funds, limit, nextAllowedAt]);
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(career));
+    } catch {
+      setNotice("This career could not be saved in your browser.");
+    }
+  }, [career]);
 
-  /* ---------- Derived ---------- */
-  const total     = costOf(sel);
-  const remaining = budget - total;
-  const canRace   = sel.d1 && sel.d2 && sel.ch && sel.pu && sel.tp && sel.pit && remaining >= 0;
-  const stats     = computeStats(sel, track, dev);
+  const totalCost = useMemo(() => costOf(career.sel), [career.sel]);
+  const remaining = career.budget - totalCost;
+  const currentRound = CALENDAR[career.roundIndex];
+  const seasonComplete = career.roundIndex >= CALENDAR.length;
+  const lineupComplete = Boolean(
+    career.sel.d1 && career.sel.d2 && career.sel.ch && career.sel.pu && career.sel.tp && career.sel.pit,
+  );
+  const canRace = lineupComplete && remaining >= 0 && !seasonComplete;
+  const lineupLocked = career.roundIndex > 0;
+  const averageWear = (career.carWear.powerUnit + career.carWear.gearbox) / 2;
+  const stats = computeStats(career.sel, currentRound?.track || "balanced", career.dev);
+  const driverStandings = sortedStandings(career.standings.drivers);
+  const constructorStandings = sortedStandings(career.standings.constructors);
+  const userConstructorPosition = constructorStandings.findIndex((row) => row.name === career.teamName) + 1;
 
-  /* ---------- Select options ---------- */
-  const driverOptions = (other) => DRIVERS.map((d) => (
-    <option key={d.id} value={d.id} disabled={d.id === other}>
-      {d.flag} {d.name} — {d.team} · {d.cost}
-    </option>
-  ));
-  const chassisOptions = CHASSIS.map((c)   => <option key={c.id} value={c.id}>{c.name} · {c.cost}</option>);
-  const engineOptions  = ENGINES.map((e)   => <option key={e.id} value={e.id}>{e.name} · {e.cost}</option>);
-  const tpOptions      = PRINCIPALS.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.cost}</option>);
-  const pitOptions     = PIT.map((p)        => <option key={p.id} value={p.id}>{p.name} · {p.cost}</option>);
-  const trackOptions   = TRACKS.map((t)     => <option key={t.id} value={t.id}>{t.name}</option>);
-
-  /* ---------- Pickers ---------- */
-  const setPick = (k, v) => {
-    if ((k === "d1" && v === sel.d2) || (k === "d2" && v === sel.d1)) return alert("Pick two different drivers 🙂");
-    setSeason(null);
-    setLastWeekend(null);
-    setSel((s) => ({ ...s, [k]: v }));
+  const updateCareer = (patch) => {
+    setCareer((current) => ({ ...current, ...patch }));
+    setNotice("");
   };
 
-  /* ---------- Economy helpers ---------- */
-  function addDevPoints(n) {
-    setDev((d) => ({ ...d, points: Math.min(MAX_WALLET, d.points + n) }));
-  }
-  function canEarn(n = 0) {
-    const today = new Date().toDateString();
-    if (limit.date !== today) { setLimit({ date: today, earned: 0 }); return true; }
-    return limit.earned + n <= DAILY_CAP;
-  }
-  function earn(n) {
-    const today = new Date().toDateString();
-    setLimit((l) => l.date !== today ? { date: today, earned: n } : { ...l, earned: l.earned + n });
-    addDevPoints(n);
-  }
-  function gate() {
-    const now = Date.now();
-    if (now < nextAllowedAt) { alert(`Cooldown… wait ${Math.ceil((nextAllowedAt - now) / 1000)}s`); return false; }
-    setNextAllowedAt(now + COOLDOWN_MS);
-    return true;
+  function setPick(key, value) {
+    if (lineupLocked) return;
+    if ((key === "d1" && value === career.sel.d2) || (key === "d2" && value === career.sel.d1)) {
+      setNotice("Your two race seats need different drivers.");
+      return;
+    }
+    updateCareer({ sel: { ...career.sel, [key]: value } });
   }
 
-  /* ---------- Sponsor payouts ---------- */
-  function sponsorPayout(wk) {
-    const sp      = SPONSORS.find((s) => s.id === sponsor) || SPONSORS[0];
-    let payout    = sp.base;
-    const you     = wk.results.filter((r) => r.isUser);
-    const bestPos = Math.min(...you.map((r) => r.pos));
-    const bothScored = you.filter((x) => x.points > 0).length === 2;
-    const pole    = wk.quali[0]?.isUser;
-    const fastest = !wk.safetyCar && Math.random() < 0.18 && you.some((x) => !x.dnf);
-
-    if (sp.bonus.podium       && bestPos <= 3)   payout += sp.bonus.podium;
-    if (sp.bonus.doublePoints && bothScored)      payout += sp.bonus.doublePoints;
-    if (sp.bonus.pole         && pole)            payout += sp.bonus.pole;
-    if (sp.bonus.fastest      && fastest)         payout += sp.bonus.fastest;
-
-    setFunds((f) => f + payout);
-    return payout;
-  }
-
-  /* ---------- Upgrades ---------- */
-  const buy = (key) => {
-    const lvl  = dev[key];
-    const cost = upgradeCost(lvl);
-    if (dev.points < cost) return;
-    setDev((d) => ({ ...d, [key]: lvl + 1, points: d.points - cost }));
-  };
-
-  /* ---------- Funds converters ---------- */
-  function buyDevWithFunds()    { if (funds < 2)              return alert("Need 2 funds");           if (dev.points >= MAX_WALLET) return alert("Dev Point wallet full"); setFunds((f) => f - 2); addDevPoints(1); }
-  function buyBudgetWithFunds() { if (funds < 3)              return alert("Need 3 funds");           setFunds((f) => f - 3); setBudget((b) => Math.min(140, b + 1)); }
-
-  /* ---------- Reset & slots ---------- */
-  function reset() {
-    setSel({ d1: "", d2: "", ch: "", pu: "", tp: "", pit: "stock" });
-    setDev({ points: 0, aero: 0, power: 0, mech: 0, rel: 0, pit: 0 });
-    setSeason(null); setLastWeekend(null); setBudget(110); setTeamName("Your F1 Team");
-    setFunds(0); setSponsor("bronze");
-  }
-  function snapshot() {
-    return {
-      meta:  { savedAt: Date.now(), seasonYear, teamName, sponsor },
-      state: { sel, dev, budget, lastWeekend, season, history, seasonYear, sponsor, funds, limit, nextAllowedAt },
+  function runRaceWeekend() {
+    if (!canRace || !currentRound) return;
+    const raceWeekend = weekend(career.sel, currentRound.track, career.dev, {
+      teamName: career.teamName,
+      setup: career.setup,
+      strategy: career.strategy,
+      pitPlan: career.pitPlan,
+      wear: averageWear,
+    });
+    const userResults = raceWeekend.results.filter((result) => result.isUser);
+    const teamPoints = userResults.reduce((sum, result) => sum + result.points, 0);
+    const reward = sponsorReward(raceWeekend, career.sponsor);
+    const devGain = Math.min(6, 1 + Math.floor(teamPoints / 10) + (raceWeekend.quali[0]?.isUser ? 1 : 0));
+    const paceWear = career.strategy === "attack" ? 4 : career.strategy === "conserve" ? -2 : 0;
+    const powerTrackWear = currentRound.track === "power" ? 3 : 0;
+    const streetWear = currentRound.track === "street" ? 2 : 0;
+    const wearAdded = {
+      powerUnit: Math.max(3, 7 + paceWear + powerTrackWear),
+      gearbox: Math.max(2, 5 + paceWear + streetWear),
     };
-  }
-  function restore(snap) {
-    if (!snap) return;
-    const { state } = snap;
-    setSel(state.sel);            setDev(state.dev);
-    setBudget(state.budget);      setLastWeekend(state.lastWeekend || null);
-    setSeason(state.season || null); setHistory(state.history || []);
-    setSeasonYear(state.seasonYear || 2025); setSponsor(state.sponsor || "bronze");
-    setFunds(state.funds ?? 0);
-    setLimit(state.limit || { date: new Date().toDateString(), earned: 0 });
-    setNextAllowedAt(state.nextAllowedAt || 0);
-  }
-  function saveToSlot(key)   { const next = { ...slots, [key]: snapshot() }; setSlots(next); saveSlots(next); }
-  function loadFromSlot(key) { if (!slots[key]) return alert("Empty slot"); restore(slots[key]); }
-  function deleteSlot(key)   { if (!slots[key] || !confirm("Delete this save?")) return; const next = { ...slots, [key]: null }; setSlots(next); saveSlots(next); }
+    const drivers = { ...career.standings.drivers };
+    const constructors = { ...career.standings.constructors };
+    raceWeekend.results.forEach((result) => {
+      addStanding(drivers, result.driver, result.points);
+      addStanding(constructors, result.team, result.points);
+    });
+    const report = {
+      gp: currentRound.gp,
+      track: currentRound.track,
+      round: career.roundIndex + 1,
+      payout: reward.total,
+      targetMet: reward.targetMet,
+      sponsorName: reward.deal.name,
+      devGain,
+      wearAdded,
+      setup: career.setup,
+      strategy: career.strategy,
+      pitPlan: career.pitPlan,
+      ...raceWeekend,
+    };
 
-  /* ---------- Simulate ---------- */
-  function runWeekend() {
-    if (!canRace || !gate()) return;
-    const wk  = weekend(sel, track, dev);
-    setLastWeekend({ gp: "Exhibition", track, ...wk });
-
-    const you     = wk.results.filter((r) => r.isUser);
-    const bestPos = Math.min(...you.map((r) => r.pos));
-    let gained    = Math.max(0, 6 - bestPos);
-    if (you.filter((x) => x.points > 0).length === 2) gained += 2;
-    if (gained > 0 && canEarn(gained)) earn(gained);
-    sponsorPayout(wk);
-  }
-
-  function runAutoSeason() {
-    if (!canRace || !gate()) return;
-    const s = autoSeason(sel, dev);
-    setSeason(s);
-
-    const consChamp = s.cons[0]?.team    || "—";
-    const drvChamp  = s.drivers[0]?.name || "—";
-    setHistory((h) => [{ year: seasonYear, consChampion: consChamp, drvChampion: drvChamp }, ...h].slice(0, 20));
-    setSeasonYear((y) => y + 1);
-
-    const youConstructor = s.cons.find((t) => t.team === "You");
-    const bonus = youConstructor ? Math.round(youConstructor.pts / 25) : 0;
-    if (bonus > 0 && canEarn(bonus)) earn(bonus);
-
-    const base      = SPONSORS.find((sp) => sp.id === sponsor)?.base ?? 3;
-    const top3      = s.cons.slice(0, 3).some((t) => t.team === "You");
-    const totalFunds = 16 * base + (top3 ? 10 : 4);
-    setFunds((f) => f + totalFunds);
+    setCareer((current) => ({
+      ...current,
+      roundIndex: current.roundIndex + 1,
+      funds: current.funds + reward.total,
+      dev: { ...current.dev, points: Math.min(MAX_WALLET, current.dev.points + devGain) },
+      carWear: {
+        powerUnit: clamp(current.carWear.powerUnit + wearAdded.powerUnit),
+        gearbox: clamp(current.carWear.gearbox + wearAdded.gearbox),
+      },
+      standings: { drivers, constructors },
+      weekendHistory: [...current.weekendHistory, report],
+      lastWeekend: report,
+    }));
+    setNotice(`${currentRound.gp} complete · +${reward.total} funds · +${devGain} development points`);
+    window.requestAnimationFrame(() => document.getElementById("weekend-report")?.scrollIntoView({ behavior: "smooth" }));
   }
 
-  /* ---------- UI helpers ---------- */
-  const cooldownLeft = Math.max(0, nextAllowedAt - Date.now());
-  const cooldownSecs = Math.ceil(cooldownLeft / 1000);
+  function buyUpgrade(key) {
+    const level = career.dev[key];
+    const price = upgradeCost(level);
+    if (price === null || career.dev.points < price) return;
+    updateCareer({
+      dev: { ...career.dev, [key]: level + 1, points: career.dev.points - price },
+    });
+  }
 
-  /* ================================================================
-     RENDER
-  ================================================================ */
+  function repair(part) {
+    const cost = part === "powerUnit" ? 5 : 4;
+    if (career.funds < cost || career.carWear[part] <= 0) return;
+    updateCareer({
+      funds: career.funds - cost,
+      carWear: { ...career.carWear, [part]: Math.max(0, career.carWear[part] - 20) },
+    });
+  }
+
+  function increaseBudget() {
+    if (career.funds < 6 || career.budget >= 140) return;
+    updateCareer({ funds: career.funds - 6, budget: career.budget + 1 });
+  }
+
+  function startNextSeason() {
+    if (!seasonComplete) return;
+    const constructors = sortedStandings(career.standings.constructors);
+    const drivers = sortedStandings(career.standings.drivers);
+    const teamPosition = constructors.findIndex((row) => row.name === career.teamName) + 1;
+    const prizeMoney = Math.max(8, 28 - Math.max(1, teamPosition) * 2);
+    setCareer((current) => ({
+      ...current,
+      seasonYear: current.seasonYear + 1,
+      roundIndex: 0,
+      funds: current.funds + prizeMoney,
+      standings: { drivers: {}, constructors: {} },
+      weekendHistory: [],
+      lastWeekend: null,
+      carWear: { powerUnit: 0, gearbox: 0 },
+      history: [{
+        year: current.seasonYear,
+        constructorsChampion: constructors[0]?.name || "—",
+        driversChampion: drivers[0]?.name || "—",
+        teamPosition: teamPosition || "—",
+      }, ...current.history].slice(0, 12),
+    }));
+    setNotice(`Season complete · ${prizeMoney} funds awarded · contracts are unlocked`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function newCareer() {
+    if (!window.confirm("Start a new career? Your active career will be replaced.")) return;
+    setCareer(freshCareer());
+    setNotice("New career created.");
+  }
+
+  function saveToSlot(key) {
+    const next = {
+      ...slots,
+      [key]: {
+        meta: { teamName: career.teamName, seasonYear: career.seasonYear, savedAt: Date.now() },
+        state: career,
+      },
+    };
+    try {
+      localStorage.setItem(SLOTS_KEY, JSON.stringify(next));
+      setSlots(next);
+      setNotice("Career saved.");
+    } catch {
+      setNotice("The career could not be saved in this browser.");
+    }
+  }
+
+  function loadFromSlot(key) {
+    if (!slots[key]) return;
+    const snapshot = slots[key];
+    setCareer(normalizeCareer({ ...snapshot.state, teamName: snapshot.state?.teamName || snapshot.meta?.teamName }));
+    setNotice("Career loaded.");
+  }
+
+  function deleteSlot(key) {
+    if (!slots[key] || !window.confirm("Delete this career save?")) return;
+    const next = { ...slots, [key]: null };
+    try {
+      localStorage.setItem(SLOTS_KEY, JSON.stringify(next));
+      setSlots(next);
+      setNotice("Save slot deleted.");
+    } catch {
+      setNotice("The save slot could not be deleted.");
+    }
+  }
+
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <h1 className={styles.h1}>🛠️ F1 Manager — Build • Upgrade • Win</h1>
-          <div className={styles.actions}>
-            <div className={styles.devBadgePro}>Season: <strong>{seasonYear}</strong></div>
-            <button className={styles.btn} onClick={reset}>Reset</button>
+    <main className={styles.page} style={{ "--team": stats.color }}>
+      <section className={styles.hero}>
+        <div className={styles.heroGlow} />
+        <div className={styles.container}>
+          <div className={styles.heroTopline}>
+            <span className={styles.eyebrow}>Team principal career</span>
+            <button className={styles.textButton} onClick={newCareer}>New career</button>
           </div>
-        </header>
+          <div className={styles.heroGrid}>
+            <div>
+              <input
+                className={styles.teamNameInput}
+                aria-label="Team name"
+                disabled={lineupLocked}
+                maxLength={32}
+                value={career.teamName}
+                onChange={(event) => updateCareer({ teamName: event.target.value })}
+              />
+              <p className={styles.heroCopy}>
+                Build the car, manage risk, and make every race weekend count.
+              </p>
+            </div>
+            <div className={styles.heroMetrics}>
+              <Metric label="Season" value={career.seasonYear} />
+              <Metric label="Round" value={`${Math.min(career.roundIndex + 1, CALENDAR.length)}/${CALENDAR.length}`} />
+              <Metric label="Funds" value={career.funds} suffix="M" />
+              <Metric label="Team rank" value={userConstructorPosition ? `P${userConstructorPosition}` : "—"} />
+            </div>
+          </div>
 
-        {/* PROFILES */}
-        <div className={styles.simBlock}>
-          <div className={styles.simHeader}>
-            <h3 className={styles.h3}>Profiles</h3>
-            <div className={styles.devBadgePro}>Dev Pts: <strong>{dev.points}/{MAX_WALLET}</strong></div>
+          <div className={styles.calendar} aria-label="Season calendar">
+            {CALENDAR.map((round, index) => (
+              <div
+                key={round.gp}
+                className={`${styles.calendarRound} ${index < career.roundIndex ? styles.complete : ""} ${index === career.roundIndex ? styles.current : ""}`}
+                title={round.gp}
+              >
+                <span>{index + 1}</span>
+                <small>{round.gp.slice(0, 3).toUpperCase()}</small>
+              </div>
+            ))}
           </div>
-          <div className={styles.profileGrid}>
-            {["slot1", "slot2", "slot3"].map((key, i) => {
-              const snap  = slots[key];
-              const title = snap ? (snap.meta.teamName || `Career ${i + 1}`) : `Empty Slot ${i + 1}`;
-              const sub   = snap ? new Date(snap.meta.savedAt).toLocaleString() : "—";
-              return (
-                <div key={key} className={styles.profileCard}>
-                  <div className={styles.profileHead}>
-                    <div className={styles.profileTitle}>{title}</div>
-                    <div className={styles.profileSub}>{sub}</div>
+        </div>
+      </section>
+
+      <div className={styles.container}>
+        {notice && <div className={styles.notice} role="status">{notice}</div>}
+
+        <section className={styles.commandGrid}>
+          <div className={styles.panel}>
+            <PanelHeading kicker="Race control" title={seasonComplete ? "Season complete" : currentRound?.gp} badge={seasonComplete ? "Review" : `Round ${career.roundIndex + 1}`} />
+            {seasonComplete ? (
+              <div className={styles.seasonComplete}>
+                <div className={styles.trophy}>01</div>
+                <div>
+                  <h3>Close the books on {career.seasonYear}</h3>
+                  <p>Record the champions, collect prize money, and unlock your lineup for next season.</p>
+                </div>
+                <button className={styles.primaryButton} onClick={startNextSeason}>Start next season</button>
+              </div>
+            ) : (
+              <>
+                <div className={styles.trackBrief}>
+                  <div className={styles.trackMark}>{String(career.roundIndex + 1).padStart(2, "0")}</div>
+                  <div>
+                    <strong>{TRACKS.find((item) => item.id === currentRound?.track)?.name}</strong>
+                    <span>{currentRound?.track === "power" ? "Top speed and deployment" : currentRound?.track === "street" ? "Mechanical grip and precision" : currentRound?.track === "highDownforce" ? "Aero load and cornering" : "Complete car performance"}</span>
                   </div>
-                  <div className={styles.profileBtns}>
-                    <button className={styles.btnGhost}   onClick={() => saveToSlot(key)}>Save</button>
-                    <button className={styles.btnPrimary} disabled={!snap} onClick={() => loadFromSlot(key)}>Load</button>
-                    <button className={styles.btnDanger}  disabled={!snap} onClick={() => deleteSlot(key)}>Delete</button>
+                </div>
+                <DecisionGroup label="Car setup" options={SETUPS} value={career.setup} onChange={(setup) => updateCareer({ setup })} />
+                <DecisionGroup label="Race approach" options={STRATEGIES} value={career.strategy} onChange={(strategy) => updateCareer({ strategy })} />
+                <DecisionGroup label="Pit wall plan" options={PIT_PLANS} value={career.pitPlan} onChange={(pitPlan) => updateCareer({ pitPlan })} />
+                {!canRace && (
+                  <p className={styles.blocker}>{!lineupComplete ? "Complete your team before entering the weekend." : "Your lineup is over the cost cap."}</p>
+                )}
+                <button className={styles.raceButton} disabled={!canRace} onClick={runRaceWeekend}>
+                  <span>Run {currentRound?.gp} weekend</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className={`${styles.panel} ${styles.teamPanel}`}>
+            <PanelHeading kicker="Performance centre" title={career.teamName || "Your team"} badge={`${stats.overall || 0} OVR`} />
+            <div className={styles.driverPair}>
+              <DriverChip id={career.sel.d1} seat="Car 1" />
+              <DriverChip id={career.sel.d2} seat="Car 2" />
+            </div>
+            <div className={styles.statGrid}>
+              <StatBar label="Pace" value={stats.pace} />
+              <StatBar label="Qualifying" value={stats.quali} />
+              <StatBar label="Race" value={stats.race} />
+              <StatBar label="Reliability" value={stats.reliability} />
+            </div>
+            <div className={styles.healthSection}>
+              <div className={styles.subheading}><span>Power unit wear</span><strong>{career.carWear.powerUnit}%</strong></div>
+              <WearBar value={career.carWear.powerUnit} />
+              <button className={styles.smallButton} disabled={!career.carWear.powerUnit || career.funds < 5} onClick={() => repair("powerUnit")}>Service · 5M</button>
+              <div className={styles.subheading}><span>Gearbox wear</span><strong>{career.carWear.gearbox}%</strong></div>
+              <WearBar value={career.carWear.gearbox} />
+              <button className={styles.smallButton} disabled={!career.carWear.gearbox || career.funds < 4} onClick={() => repair("gearbox")}>Service · 4M</button>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.panel}>
+          <PanelHeading kicker="Sporting department" title="Build your team" badge={lineupLocked ? "Locked in-season" : `${Math.max(0, remaining)} cap left`} />
+          <div className={styles.builderGrid}>
+            <Field label="Driver 1">
+              <select value={career.sel.d1} disabled={lineupLocked} onChange={(event) => setPick("d1", event.target.value)}>
+                <option value="">Select driver</option>
+                {DRIVERS.map((driver) => <option key={driver.id} value={driver.id} disabled={driver.id === career.sel.d2}>{driver.flag} {driver.name} · {driver.cost}</option>)}
+              </select>
+            </Field>
+            <Field label="Driver 2">
+              <select value={career.sel.d2} disabled={lineupLocked} onChange={(event) => setPick("d2", event.target.value)}>
+                <option value="">Select driver</option>
+                {DRIVERS.map((driver) => <option key={driver.id} value={driver.id} disabled={driver.id === career.sel.d1}>{driver.flag} {driver.name} · {driver.cost}</option>)}
+              </select>
+            </Field>
+            <Field label="Chassis">
+              <select value={career.sel.ch} disabled={lineupLocked} onChange={(event) => setPick("ch", event.target.value)}>
+                <option value="">Select chassis</option>
+                {CHASSIS.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.cost}</option>)}
+              </select>
+            </Field>
+            <Field label="Power unit">
+              <select value={career.sel.pu} disabled={lineupLocked} onChange={(event) => setPick("pu", event.target.value)}>
+                <option value="">Select power unit</option>
+                {ENGINES.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.cost}</option>)}
+              </select>
+            </Field>
+            <Field label="Team principal">
+              <select value={career.sel.tp} disabled={lineupLocked} onChange={(event) => setPick("tp", event.target.value)}>
+                <option value="">Select principal</option>
+                {PRINCIPALS.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.cost}</option>)}
+              </select>
+            </Field>
+            <Field label="Pit crew">
+              <select value={career.sel.pit} disabled={lineupLocked} onChange={(event) => setPick("pit", event.target.value)}>
+                {PIT.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.cost}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className={styles.capRow}>
+            <div className={styles.capCopy}>
+              <span>Cost cap</span>
+              <strong className={remaining < 0 ? styles.negative : ""}>{totalCost} / {career.budget}</strong>
+            </div>
+            <div className={styles.capTrack}><span className={remaining < 0 ? styles.overCap : ""} style={{ width: `${Math.min(100, (totalCost / career.budget) * 100)}%` }} /></div>
+            <button className={styles.smallButton} disabled={career.funds < 6 || career.budget >= 140} onClick={increaseBudget}>Expand cap +1 · 6M</button>
+          </div>
+        </section>
+
+        <section className={styles.splitGrid}>
+          <div className={styles.panel}>
+            <PanelHeading kicker="Commercial" title="Sponsor contract" badge={lineupLocked ? "Signed" : "Negotiations open"} />
+            <div className={styles.sponsorList}>
+              {SPONSORS.map((sponsor) => (
+                <button
+                  key={sponsor.id}
+                  className={`${styles.sponsorCard} ${career.sponsor === sponsor.id ? styles.selectedSponsor : ""}`}
+                  disabled={lineupLocked}
+                  onClick={() => updateCareer({ sponsor: sponsor.id })}
+                >
+                  <span className={styles.sponsorTop}><strong>{sponsor.name}</strong><b>{sponsor.base}M base</b></span>
+                  <span>{sponsor.objective}</span>
+                  <small>Target bonus {sponsor.targetBonus}M · {sponsor.desc}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.panel}>
+            <PanelHeading kicker="R&D allocation" title="Car development" badge={`${career.dev.points}/${MAX_WALLET} points`} />
+            <div className={styles.upgradeGrid}>
+              <UpgradeCard name="Aerodynamics" level={career.dev.aero} points={career.dev.points} onBuy={() => buyUpgrade("aero")} />
+              <UpgradeCard name="Power unit" level={career.dev.power} points={career.dev.points} onBuy={() => buyUpgrade("power")} />
+              <UpgradeCard name="Mechanical" level={career.dev.mech} points={career.dev.points} onBuy={() => buyUpgrade("mech")} />
+              <UpgradeCard name="Reliability" level={career.dev.rel} points={career.dev.points} onBuy={() => buyUpgrade("rel")} />
+              <UpgradeCard name="Pit operations" level={career.dev.pit} points={career.dev.points} onBuy={() => buyUpgrade("pit")} />
+            </div>
+          </div>
+        </section>
+
+        {(driverStandings.length > 0 || constructorStandings.length > 0) && (
+          <section className={styles.standingsGrid}>
+            <StandingsTable title="Constructors" rows={constructorStandings} highlight={career.teamName} />
+            <StandingsTable title="Drivers" rows={driverStandings.slice(0, 10)} highlight={[DRIVERS.find((d) => d.id === career.sel.d1)?.name, DRIVERS.find((d) => d.id === career.sel.d2)?.name]} />
+          </section>
+        )}
+
+        {career.lastWeekend && <WeekendReport report={career.lastWeekend} />}
+
+        <section className={styles.panel}>
+          <PanelHeading kicker="Career archive" title="Save room" badge={`${career.history.length} completed seasons`} />
+          <div className={styles.saveGrid}>
+            {["slot1", "slot2", "slot3"].map((key, index) => {
+              const snapshot = slots[key];
+              return (
+                <div className={styles.saveCard} key={key}>
+                  <span>Career {index + 1}</span>
+                  <strong>{snapshot?.meta?.teamName || "Empty slot"}</strong>
+                  <small>{snapshot ? `${snapshot.meta.seasonYear} · ${new Date(snapshot.meta.savedAt).toLocaleDateString()}` : "No saved career"}</small>
+                  <div>
+                    <button onClick={() => saveToSlot(key)}>Save</button>
+                    <button disabled={!snapshot} onClick={() => loadFromSlot(key)}>Load</button>
+                    <button disabled={!snapshot} onClick={() => deleteSlot(key)}>Delete</button>
                   </div>
                 </div>
               );
             })}
           </div>
-          {history.length > 0 && (
-            <>
-              <h4 style={{ marginTop: 12 }}>Career History</h4>
-              <ul className={styles.historyList}>
-                {history.slice(0, 8).map((h, idx) => (
-                  <li key={idx}><strong>{h.year}</strong> — Constructors: {h.consChampion} · Drivers: {h.drvChampion}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-
-        {/* SPONSOR / ECONOMY */}
-        <div className={styles.simBlock}>
-          <div className={styles.simHeader}>
-            <h3 className={styles.h3}>Sponsorship & Economy</h3>
-            <div className={styles.fundsBadge}>Funds: <strong>{funds}</strong></div>
-          </div>
-          <div className={styles.sponsorGrid}>
-            {SPONSORS.map((sp) => (
-              <div
-                key={sp.id}
-                className={`${styles.sponsorCard} ${sponsor === sp.id ? styles.active : ""}`}
-                onClick={() => setSponsor(sp.id)}
-              >
-                <div className={styles.sponsorHeader}>
-                  <div className={styles.sponsorTitle}>{sp.name}</div>
-                  <div className={styles.sponsorPill}>Base +{sp.base}</div>
-                </div>
-                <div className={styles.sponsorDesc}>{sp.desc}</div>
-                <div className={styles.sponsorPerks}>
-                  {Object.entries(sp.bonus).map(([k, v]) => <div key={k} className={styles.perk}>+{v} {k}</div>)}
-                </div>
-                <div className={styles.sponsorPick}>{sponsor === sp.id ? "Selected" : "Pick"}</div>
-              </div>
-            ))}
-          </div>
-          <div className={styles.convertRow}>
-            <button className={styles.btn} onClick={buyDevWithFunds}>Convert 2 Funds → +1 Dev Pt</button>
-            <button className={styles.btn} onClick={buyBudgetWithFunds}>Convert 3 Funds → +1 Budget Cap</button>
-            <div className={styles.capNote}>Daily Dev cap: {limit.earned}/{DAILY_CAP}</div>
-          </div>
-        </div>
-
-        {/* BUILDER */}
-        <div className={styles.controls}>
-          <div className={styles.controlGroup}>
-            <label className={styles.label}>Team name</label>
-            <input className={styles.input} value={teamName} onChange={(e) => setTeamName(e.target.value)} />
-          </div>
-
-          <div className={styles.controlRow}>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Driver 1</label>
-              <select className={styles.select} value={sel.d1} onChange={(e) => setPick("d1", e.target.value)}>
-                <option value="">— Select —</option>{driverOptions(sel.d2)}
-              </select>
-            </div>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Driver 2</label>
-              <select className={styles.select} value={sel.d2} onChange={(e) => setPick("d2", e.target.value)}>
-                <option value="">— Select —</option>{driverOptions(sel.d1)}
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.controlRow}>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Chassis</label>
-              <select className={styles.select} value={sel.ch} onChange={(e) => setPick("ch", e.target.value)}>
-                <option value="">— Select —</option>{chassisOptions}
-              </select>
-            </div>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Engine</label>
-              <select className={styles.select} value={sel.pu} onChange={(e) => setPick("pu", e.target.value)}>
-                <option value="">— Select —</option>{engineOptions}
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.controlRow}>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Team Principal</label>
-              <select className={styles.select} value={sel.tp} onChange={(e) => setPick("tp", e.target.value)}>
-                <option value="">— Select —</option>{tpOptions}
-              </select>
-            </div>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Pit Crew</label>
-              <select className={styles.select} value={sel.pit} onChange={(e) => setPick("pit", e.target.value)}>
-                {pitOptions}
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.controlRow}>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Track (for Weekend)</label>
-              <select className={styles.select} value={track} onChange={(e) => setTrack(e.target.value)}>
-                {trackOptions}
-              </select>
-            </div>
-            <div className={styles.controlCol}>
-              <label className={styles.label}>Budget</label>
-              <input
-                type="number" className={styles.input} min={90} max={140} value={budget}
-                onChange={(e) => setBudget(Number(e.target.value || 110))}
-              />
-              <div className={styles.budgetBarWrap}>
-                <div className={styles.budgetBar}>
-                  <div
-                    className={`${styles.budgetFill} ${budget - total < 0 ? styles.over : ""}`}
-                    style={{ width: `${Math.min(100, Math.round((total / Math.max(1, budget)) * 100))}%` }}
-                  />
-                </div>
-                <div className={styles.budgetText}>
-                  Total {total} / {budget} • {budget - total >= 0 ? `${budget - total} left` : `${total - budget} over`}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* TEAM CARD */}
-        <div className={styles.card} style={{ ["--team"]: stats.color }}>
-          <div className={styles.cardHeader}>
-            <div className={styles.badge} />
-            <div>
-              <div className={styles.cardTitle}>{teamName}</div>
-              <div className={styles.cardSub}>
-                {sel.ch ? CHASSIS.find((c) => c.id === sel.ch)?.name : "—"} •{" "}
-                {sel.pu ? ENGINES.find((e) => e.id === sel.pu)?.name : "—"} •{" "}
-                {sel.tp ? PRINCIPALS.find((p) => p.id === sel.tp)?.name : "—"}
-              </div>
-            </div>
-            <div className={styles.overall}>
-              <div className={styles.overallNum}>{stats.overall || "—"}</div>
-              <div className={styles.overallLabel}>OVR</div>
-            </div>
-          </div>
-          <div className={styles.driversRow}>
-            <DriverChip id={sel.d1} />
-            <DriverChip id={sel.d2} />
-          </div>
-          <div className={styles.statsGrid}>
-            <StatBar label="Pace"        value={stats.pace}        />
-            <StatBar label="Quali"       value={stats.quali}       />
-            <StatBar label="Race"        value={stats.race}        />
-            <StatBar label="Reliability" value={stats.reliability} />
-          </div>
-        </div>
-
-        {/* UPGRADES */}
-        <div className={`${styles.simBlock} ${styles.upgradesBlock}`}>
-          <div className={styles.simHeader}>
-            <h3 className={styles.h3}>Upgrades</h3>
-            <div className={styles.devBadgePro}>Dev Pts: <strong>{dev.points}/{MAX_WALLET}</strong></div>
-          </div>
-          <p className={styles.simHint}>
-            Lv cost: 3,4,5,6,8. Effects/level → <b>Aero</b> +1.5, <b>Power</b> +1.4,{" "}
-            <b>Mechanical</b> +1.5 grip / +0.6 tire / −0.8 weight,{" "}
-            <b>Reliability</b> +1.6, <b>Pit</b> +1.8 stop / +1.0 rel.
-          </p>
-          <div className={styles.upgradeGrid}>
-            <UpgradeCard name="Aero"        lvl={dev.aero}  cost={upgradeCost(dev.aero)}  can={dev.points >= upgradeCost(dev.aero)}  onBuy={() => buy("aero")}  desc="Downforce for fast corners; big on high-DF tracks." />
-            <UpgradeCard name="Power Unit"  lvl={dev.power} cost={upgradeCost(dev.power)} can={dev.points >= upgradeCost(dev.power)} onBuy={() => buy("power")} desc="Top speed & deployment; huge on power tracks." />
-            <UpgradeCard name="Mechanical"  lvl={dev.mech}  cost={upgradeCost(dev.mech)}  can={dev.points >= upgradeCost(dev.mech)}  onBuy={() => buy("mech")}  desc="Mech grip, tire life, lower weight; loves street tracks." />
-            <UpgradeCard name="Reliability" lvl={dev.rel}   cost={upgradeCost(dev.rel)}   can={dev.points >= upgradeCost(dev.rel)}   onBuy={() => buy("rel")}   desc="Fewer DNFs; steadier long-run pace." />
-            <UpgradeCard name="Pit Crew"    lvl={dev.pit}   cost={upgradeCost(dev.pit)}   can={dev.points >= upgradeCost(dev.pit)}   onBuy={() => buy("pit")}   desc="Faster, cleaner stops & better pit reliability." />
-          </div>
-        </div>
-
-        {/* WEEKEND */}
-        <div className={styles.simBlock}>
-          <div className={styles.simHeader}>
-            <h3 className={styles.h3}>Race Weekend</h3>
-            <div className={styles.actions}>
-              <button className={styles.btn} disabled={!canRace || cooldownLeft > 0} onClick={runWeekend}>
-                {cooldownLeft > 0 ? `Wait ${cooldownSecs}s` : "Simulate Weekend"}
-              </button>
-              <button className={styles.btn} disabled={!canRace || cooldownLeft > 0} onClick={runAutoSeason}>
-                {cooldownLeft > 0 ? `Wait ${cooldownSecs}s` : "Run Season (auto)"}
-              </button>
-            </div>
-          </div>
-          {!canRace && <p className={styles.simHint}>Select your full lineup and stay under budget to enable.</p>}
-          {lastWeekend && (
-            <div className={styles.gridWeekend}>
-              <div>
-                <h4>Qualifying — {TRACKS.find((t) => t.id === track)?.name}</h4>
-                <ol className={styles.resultsList}>
-                  {lastWeekend.quali.slice(0, 10).map((q) => (
-                    <li key={`q-${q.pos}`} className={q.isUser ? styles.you : ""}>
-                      <strong>P{q.pos}</strong> {q.driver} {q.isUser ? "(You)" : `— ${q.team}`}{" "}
-                      <span className={styles.score}>({Math.round(q.score)})</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div>
-                <h4>Race — {lastWeekend.safetyCar ? "with Safety Car" : "green"}</h4>
-                <ol className={styles.resultsList}>
-                  {lastWeekend.results.slice(0, 10).map((r) => (
-                    <li key={`r-${r.pos}`} className={r.isUser ? styles.you : ""}>
-                      <strong>#{r.pos}</strong> {r.driver} {r.isUser ? "(You)" : `— ${r.team}`}
-                      {r.dnf && <em> DNF</em>}
-                      {r.points ? <span className={styles.points}>+{r.points}</span> : null}
-                      <span className={styles.score}>({r.score})</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* SEASON */}
-        {season && (
-          <div className={styles.simBlock}>
-            <div className={styles.simHeader}><h3 className={styles.h3}>Season Results</h3></div>
-            <div className={styles.gridSeason}>
-              <div>
-                <h4>Constructors</h4>
-                <ol className={styles.resultsList}>
-                  {season.cons.map((t, i) => (
-                    <li key={t.team} className={t.team === "You" ? styles.you : ""}>
-                      <strong>{i + 1}.</strong> {t.team} <span className={styles.points}>{t.pts} pts</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div>
-                <h4>Drivers (Top 10)</h4>
-                <ol className={styles.resultsList}>
-                  {season.drivers.slice(0, 10).map((d, i) => (
-                    <li key={d.name}>
-                      <strong>{i + 1}.</strong> {d.name} <span className={styles.points}>{d.pts} pts</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-
-            <details className={styles.details}>
-              <summary>Per-race breakdown</summary>
-              {season.perRace.map((r, idx) => (
-                <div key={idx} className={styles.raceCard}>
-                  <div className={styles.raceTitle}>{idx + 1}. {r.gp} — {TRACKS.find((t) => t.id === r.track)?.name}</div>
-                  <ol className={styles.resultsList}>
-                    {r.results.slice(0, 10).map((x) => (
-                      <li key={x.pos} className={x.isUser ? styles.you : ""}>
-                        <strong>#{x.pos}</strong> {x.driver} {x.isUser ? "(You)" : `— ${x.team}`}
-                        {x.dnf && <em> DNF</em>}
-                        <span className={styles.points}>{x.points ? `+${x.points}` : ""}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+          {career.history.length > 0 && (
+            <div className={styles.historyRow}>
+              {career.history.map((season) => (
+                <div key={season.year}><strong>{season.year}</strong><span>Team P{season.teamPosition} · {season.driversChampion} champion</span></div>
               ))}
-            </details>
-          </div>
-        )}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function Metric({ label, value, suffix = "" }) {
+  return <div className={styles.metric}><span>{label}</span><strong>{value}{suffix}</strong></div>;
+}
+
+function PanelHeading({ kicker, title, badge }) {
+  return (
+    <div className={styles.panelHeading}>
+      <div><span>{kicker}</span><h2>{title}</h2></div>
+      {badge && <b>{badge}</b>}
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return <label className={styles.field}><span>{label}</span>{children}</label>;
+}
+
+function DecisionGroup({ label, options, value, onChange }) {
+  return (
+    <div className={styles.decisionGroup}>
+      <span className={styles.decisionLabel}>{label}</span>
+      <div className={styles.decisionOptions}>
+        {options.map((option) => (
+          <button key={option.id} className={value === option.id ? styles.activeDecision : ""} onClick={() => onChange(option.id)}>
+            <strong>{option.name}</strong><small>{option.detail}</small>
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ================================================================
-   Small UI components
-================================================================ */
-function DriverChip({ id }) {
-  if (!id) return <div className={styles.driverEmpty}>No driver</div>;
-  const d = DRIVERS.find((x) => x.id === id);
+function DriverChip({ id, seat }) {
+  const driver = DRIVERS.find((item) => item.id === id);
+  if (!driver) return <div className={styles.emptyDriver}><span>{seat}</span><strong>Seat available</strong></div>;
   return (
     <div className={styles.driverChip}>
-      <div className={styles.avatar}>{initials(d.name)}</div>
-      <div className={styles.driverMeta}>
-        <div className={styles.driverName}>{d.flag} {d.name}</div>
-        <div className={styles.driverSub}>{d.team} · Cost {d.cost}</div>
-      </div>
+      <div className={styles.avatar}>{initials(driver.name)}</div>
+      <div><span>{seat} · {driver.flag}</span><strong>{driver.name}</strong><small>{driver.team} · {driver.cost} cap</small></div>
     </div>
   );
 }
 
 function StatBar({ label, value = 0 }) {
-  const v = clamp(value);
+  const safeValue = clamp(value);
   return (
     <div className={styles.stat}>
-      <div className={styles.statHeader}><span>{label}</span><span className={styles.statNum}>{v}</span></div>
-      <div className={styles.statBar}><div className={styles.statFill} style={{ width: `${v}%` }} /></div>
+      <div><span>{label}</span><strong>{safeValue}</strong></div>
+      <div className={styles.statTrack}><span style={{ width: `${safeValue}%` }} /></div>
     </div>
   );
 }
 
-function UpgradeCard({ name, lvl, cost, can, onBuy, desc }) {
-  const pct = Math.min(100, lvl * 20);
+function WearBar({ value }) {
+  const state = value >= 70 ? styles.criticalWear : value >= 40 ? styles.warningWear : "";
+  return <div className={`${styles.wearTrack} ${state}`}><span style={{ width: `${value}%` }} /></div>;
+}
+
+function UpgradeCard({ name, level, points, onBuy }) {
+  const price = upgradeCost(level);
   return (
     <div className={styles.upgradeCard}>
-      <div className={styles.upgradeHeader}>
-        <div className={styles.upgradeTitle}>{name}</div>
-        <div className={styles.upgradeCostPill}>Next: {cost} pts</div>
+      <div><strong>{name}</strong><span>Level {level}/5</span></div>
+      <div className={styles.levelTrack}>{[1, 2, 3, 4, 5].map((step) => <i key={step} className={level >= step ? styles.levelDone : ""} />)}</div>
+      <button disabled={price === null || points < price} onClick={onBuy}>{price === null ? "Max level" : `Develop · ${price} pts`}</button>
+    </div>
+  );
+}
+
+function StandingsTable({ title, rows, highlight }) {
+  const highlighted = Array.isArray(highlight) ? highlight : [highlight];
+  return (
+    <section className={styles.panel}>
+      <PanelHeading kicker="Championship" title={title} badge={`${rows.length} classified`} />
+      <ol className={styles.standingsList}>
+        {rows.map((row, index) => (
+          <li key={row.name} className={highlighted.includes(row.name) ? styles.userStanding : ""}>
+            <b>{String(index + 1).padStart(2, "0")}</b><span>{row.name}</span><strong>{row.points} PTS</strong>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WeekendReport({ report }) {
+  return (
+    <section className={styles.panel} id="weekend-report">
+      <PanelHeading kicker={`Round ${report.round} report`} title={`${report.gp} Grand Prix`} badge={`${report.payout}M sponsor payout`} />
+      <div className={styles.reportSummary}>
+        <span>Sponsor target <strong>{report.targetMet ? "Met" : "Missed"}</strong></span>
+        <span>Development <strong>+{report.devGain} pts</strong></span>
+        <span>PU wear <strong>+{report.wearAdded.powerUnit}%</strong></span>
+        <span>Gearbox wear <strong>+{report.wearAdded.gearbox}%</strong></span>
       </div>
-      <div className={styles.upgradeDesc}>{desc}</div>
-      <div className={styles.upgradeBar} aria-label={`Progress ${pct}%`}>
-        <div className={styles.upgradeBarFill} style={{ width: `${pct}%` }} />
-        <div className={styles.upgradeTicks}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <span key={i} className={`${styles.tick} ${lvl >= i ? styles.done : ""}`} />
-          ))}
-        </div>
+      <div className={styles.resultsGrid}>
+        <ResultList title="Qualifying" rows={report.quali.slice(0, 10)} qualifying />
+        <ResultList title={report.safetyCar ? "Race · Safety car" : "Race · Green flag"} rows={report.results.slice(0, 10)} />
       </div>
-      <div className={styles.upgradeFooter}>
-        <div className={styles.upgradeLevel}>Level {lvl} / 5</div>
-        <button className={styles.upgradeBuyBtn} disabled={!can} onClick={onBuy}>Buy</button>
-      </div>
+    </section>
+  );
+}
+
+function ResultList({ title, rows, qualifying = false }) {
+  return (
+    <div>
+      <h3 className={styles.resultTitle}>{title}</h3>
+      <ol className={styles.resultList}>
+        {rows.map((row) => (
+          <li key={`${row.team}-${row.driver}`} className={row.isUser ? styles.userResult : ""}>
+            <b>P{row.pos}</b><span>{row.driver}<small>{row.isUser ? "Your team" : row.team}</small></span>
+            <strong>{qualifying ? Math.round(row.score) : row.dnf ? "DNF" : row.points ? `+${row.points}` : "—"}{row.fastestLap ? " · FL" : ""}</strong>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
